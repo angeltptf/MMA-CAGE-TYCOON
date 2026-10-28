@@ -5,6 +5,7 @@ import { puedeAvanzarSemana } from '../domain/eventos';
 import { pagarBonos } from '../domain/bonos';
 import { Rng } from '../domain/rng';
 import * as TO from '../domain/torneos';
+import * as NG from '../domain/negocios';
 import { avanzarSemana, clonarJuego, type ResumenSemana } from '../domain/semana';
 import type { RespuestaNegociacion, ModoContrato } from '../domain/negociacion';
 import type { Ajustes, Contrato, Juego, NuevaPartida, Peleador } from '../domain/types';
@@ -209,4 +210,12 @@ export const torneos = {
   sortear: (id: number) => useGame.getState().mutar(j => { const rng = new Rng(j.rngState); const r = TO.sortear(j, id, rng); j.rngState = rng.state; return r; }),
   programar: (id: number, ronda: number, semana: number) => useGame.getState().mutar(j => TO.programarRonda(j, id, ronda, semana)),
   eliminar: (id: number) => useGame.getState().mutar(j => TO.eliminarTorneo(j, id)),
+};
+
+export const negocios = {
+  aceptar: (id: number) => useGame.getState().mutar(j => NG.aceptarNegocio(j, id)),
+  rechazar: (id: number) => useGame.getState().mutar(j => NG.rechazarNegocio(j, id)),
+  romper: (id: number) => useGame.getState().mutar(j => NG.romperNegocio(j, id)),
+  contraofertar: (id: number, pct: number) => useGame.getState().mutar(j => { const rng = new Rng(j.rngState); const r = NG.contraofertarNegocio(j, id, pct, rng); j.rngState = rng.state; return r; }),
+  pedir: () => useGame.getState().mutar(j => { const rng = new Rng(j.rngState); const r = NG.pedirPropuestas(j, rng); j.rngState = rng.state; return r; }),
 };

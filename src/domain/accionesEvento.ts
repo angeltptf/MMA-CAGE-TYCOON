@@ -7,6 +7,7 @@ import {
 } from './eventos';
 import { realizarEvento } from './noche';
 import { liberarEventoTorneo } from './torneos';
+import { penalizarEventoInversion } from './negocios';
 import { Rng, clamp } from './rng';
 import type { Evento, Juego, Pelea, TipoEvento } from './types';
 
@@ -21,7 +22,7 @@ export function accCrearEvento(j: Juego, semana: number, tipo: TipoEvento, salid
 }
 
 export function accConfigurar(
-  j: Juego, id: number, patch: { sedeId?: string; precio?: number; tipo?: TipoEvento; nombre?: string; nPeleas?: number },
+  j: Juego, id: number, patch: { sedeId?: string; precio?: number; precioPPV?: number; tipo?: TipoEvento; nombre?: string; nPeleas?: number },
 ): string | null {
   const e = buscar(j, id);
   if (!editable(e)) return 'Este evento ya no se puede modificar.';
@@ -32,6 +33,7 @@ export function accConfigurar(
     e.sedeId = s.id;
   }
   if (patch.precio != null) e.precio = clamp(Math.round(patch.precio), ECONOMIA.precio.min, ECONOMIA.precio.max);
+  if (patch.precioPPV != null) e.precioPPV = clamp(Math.round(patch.precioPPV), 5, 500);
   if (patch.tipo && patch.tipo !== e.tipo) {
     // al cambiar de tipo se reasigna la numeración si el nombre no es propio
     e.tipo = patch.tipo;
@@ -153,6 +155,7 @@ export function accCancelarEvento(j: Juego, eventoId: number): string | null {
   const e = buscar(j, eventoId);
   if (!editable(e)) return 'Este evento ya no se puede cancelar.';
   liberarEventoTorneo(j, e);
+  penalizarEventoInversion(j, e);
   j.eventos = j.eventos.filter(x => x.id !== eventoId);
   return null;
 }

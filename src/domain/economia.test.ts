@@ -8,6 +8,7 @@ import { exigencia } from './negociacion';
 import { popularidadEmpresa } from './empresa';
 import { costosEvento, estimarBoletos, hypeEvento, sedeDesbloqueada } from './eventos';
 import { pagarBonosPendientes } from './bonos';
+import { aceptarNegocio, ofertas, activos } from './negocios';
 import { resumenPeriodo } from './finanzas';
 import { estrellasCalif } from './peleador';
 import type { Dificultad, Juego } from './types';
@@ -24,6 +25,8 @@ function jugar(dif: Dificultad, semanas: number, seed: number, cadaSemanas = 3):
 
   for (let s = 0; s < semanas; s++) {
     if (s % cadaSemanas === 0) {
+      // aceptar todo lo que llegue (menos inversionistas, que exigen condiciones)
+      for (const o of ofertas(j).filter(x => x.tipo !== 'inversion').sort((a, b) => (b.pagoAnual + b.pagoPorEvento * 12) - (a.pagoAnual + a.pagoPorEvento * 12))) aceptarNegocio(j, o.id);
       // mantener roster: renovar a los que se les acaba y fichar baratos
       for (const p of j.peleadores.filter(x => x.companiaId === 'mia' && x.contrato && x.contrato.peleasRestantes <= 1)) {
         A.negociar(j, p.id, { ...exigencia(j, p).pide, peleasRestantes: 8 }, 'renovar');
@@ -64,7 +67,7 @@ function jugar(dif: Dificultad, semanas: number, seed: number, cadaSemanas = 3):
             ev.precio = precio;
             const e2 = estimarBoletos(j, ev, precio, h);
             const c = costosEvento(j, ev, h);
-            const neto = e2.taquilla + c.transmision - c.total;
+            const neto = e2.taquilla + c.transmision + c.extras - c.total;
             if (neto > mejor.neto) mejor = { sede: sd.id, precio, neto };
           }
           E.accConfigurar(j, id, { sedeId: mejor.sede, precio: mejor.precio });
@@ -94,6 +97,7 @@ describe('economía a 3 años con un jugador automático razonable', () => {
         caja: Math.round(mia.dinero), inicio, minCaja: Math.round(r.minCaja), semanasRojas: r.semanasRojas, eventos: r.eventos,
         pop: popularidadEmpresa(mia), fans: mia.fans, roster: r.j.peleadores.filter(p => p.companiaId === 'mia').length,
         ingresosUltimoAnio: Math.round(anual.ingresos), gastosUltimoAnio: Math.round(anual.gastos), patrocinios: patros,
+        contratos: activos(r.j).length, yt: r.j.youtube.subs, porCat: Object.fromEntries(Object.entries(anual.porCat).map(([k, v]) => [k, Math.round(v as number)])),
         ms: Math.round(performance.now() - t0), quiebra: !!r.j.finDelJuego,
       });
       expect(r.j.finDelJuego).toBeFalsy();

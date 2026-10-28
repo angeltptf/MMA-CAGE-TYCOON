@@ -6,6 +6,7 @@ import { recalcularRankings } from './rankings';
 import { pagarBonosPendientes } from './bonos';
 import { costoOperacion, ingresosAnuales, mover } from './finanzas';
 import { ptsDe } from './rankings';
+import { procesarNegociosSemana, perks } from './negocios';
 import { actualizarPatrocinios } from './patrociniosPersonales';
 import { generarOfertas } from './traspasos';
 import { generarProspectos } from './worldgen';
@@ -25,6 +26,8 @@ export function clonarJuego(j: Juego): Juego {
     ofertas: j.ofertas.map(o => ({ ...o })),
     contadores: { ...j.contadores },
     finanzas: j.finanzas.map(f => ({ ...f })),
+    negocios: j.negocios.map(n => ({ ...n, objetivos: n.objetivos.map(o => ({ ...o })), inv: n.inv ? { ...n.inv, condiciones: n.inv.condiciones.slice(), eventoIds: n.inv.eventoIds.slice() } : undefined })),
+    youtube: { ...j.youtube },
     cajaHist: j.cajaHist.slice(),
     torneos: j.torneos.map(t => ({ ...t, cupos: t.cupos.slice(), rondas: t.rondas.map(r => r.map(p => ({ ...p }))) })),
   };
@@ -91,6 +94,7 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
   const resumen: ResumenSemana = { retiros: 0, nuevos: 0, lesionadosMios: [] };
   pagarBonosPendientes(j);
   const afectadas = new Set<string>();
+  const extraRecuperacion = perks(j).recuperacion;
   let cambioEstructura = false;
 
   for (let i = 0; i < j.peleadores.length; i++) {
@@ -104,7 +108,7 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
     if (mio && p.ultimoCombate != null && j.semanaAbs - p.ultimoCombate > 26) cambios.rankPts = Math.max(1, ptsDe(p) - 0.15);
 
     // recuperación
-    cambios.fatiga = Math.max(0, p.fatiga - PROGRESION.recuperacionFatigaSemana);
+    cambios.fatiga = Math.max(0, p.fatiga - PROGRESION.recuperacionFatigaSemana - (mio ? extraRecuperacion : 0));
     if (!p.lesion) cambios.dano = Math.max(0, p.dano - PROGRESION.recuperacionDanoSemana);
     cambios.moral = p.moral + (65 - p.moral) * 0.02;
 
@@ -194,6 +198,9 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
 
   // los peleadores populares consiguen patrocinios personales
   actualizarPatrocinios(j, rng);
+
+  // contratos de patrocinio, televisión e inversionistas: pagos, objetivos y ofertas nuevas
+  procesarNegociosSemana(j, rng);
 
   // otras compañías ofrecen por mis peleadores (o pagan su cláusula)
   generarOfertas(j, rng);

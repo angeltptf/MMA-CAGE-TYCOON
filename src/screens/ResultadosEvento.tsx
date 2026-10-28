@@ -39,7 +39,7 @@ export function ResultadosEvento({ e }: { e: Evento }) {
 function Finanzas({ e }: { e: Evento }) {
   const f = e.finanzas;
   if (!f) return <Vacio titulo="Sin finanzas" />;
-  const ingresos = f.taquilla + f.transmision + f.patrocinios;
+  const ingresos = f.taquilla + f.transmision + f.patrocinios + (f.ppv ?? 0) + Math.max(0, f.inversion ?? 0);
   const gastos = f.renta + f.produccion + f.viaje + f.bolsas + f.bonosVictoria + f.bonosNoche + f.premios;
   return (
     <div className="stack">
@@ -49,8 +49,10 @@ function Finanzas({ e }: { e: Evento }) {
         <div className="kv"><span className="k">Aforo</span><span className="v">{f.aforo.toLocaleString('en-US')}</span></div>
         <div className="kv"><span className="k">Boletos vendidos</span><span className="v">{f.boletosVendidos.toLocaleString('en-US')} ({Math.round((f.boletosVendidos / Math.max(1, f.aforo)) * 100)}%)</span></div>
         <div className="kv"><span className="k">Taquilla</span><span className="v neto-pos">{dinero(f.taquilla)}</span></div>
-        <div className="kv"><span className="k">Transmisión digital</span><span className="v neto-pos">{dinero(f.transmision)}</span></div>
-        <div className="kv"><span className="k">Patrocinios</span><span className="v">{f.patrocinios ? dinero(f.patrocinios) : 'n/a'}</span></div>
+        <div className="kv"><span className="k">Televisión y YouTube{f.vistasYoutube ? ` · ${f.vistasYoutube.toLocaleString('en-US')} vistas` : ''}</span><span className="v neto-pos">{dinero(f.transmision)}</span></div>
+        {(f.ppv ?? 0) > 0 && <div className="kv"><span className="k">Pay-per-view · {(f.compradoresPPV ?? 0).toLocaleString('en-US')} compras</span><span className="v neto-pos">{dinero(f.ppv!)}</span></div>}
+        {(f.inversion ?? 0) !== 0 && <div className="kv"><span className="k">Inversionistas</span><span className={`v ${(f.inversion ?? 0) >= 0 ? 'neto-pos' : 'neto-neg'}`}>{dinero(f.inversion!, true)}</span></div>}
+        <div className="kv"><span className="k">Patrocinios del evento</span><span className="v">{f.patrocinios ? dinero(f.patrocinios) : 'n/a'}</span></div>
         <div className="kv"><span className="k">Total ingresos</span><span className="v">{dinero(ingresos)}</span></div>
         {f.clima && <p className="muted small" style={{ marginTop: 8 }}>{f.clima}</p>}
       </div>

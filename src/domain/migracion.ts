@@ -7,6 +7,10 @@ export function normalizarJuego(j: Juego): Juego {
   x.ofertas ??= [];
   x.torneos ??= [];
   x.finanzas ??= [];
+  x.negocios ??= [];
+  x.sigNegocio ??= 1;
+  x.youtube ??= { subs: 600 + Math.round(((j.companias.find(c => c.esMia)?.fans) ?? 3000) / 5), vistas: 0, ingresos: 0, virales: 0 };
+  x.cooldownPropuestas ??= 0;
   x.cajaHist ??= [];
   x.sigTorneo ??= 1;
   x.sigEvento ??= 1;

@@ -6,7 +6,7 @@ import { Seg, TopBar } from '../ui/kit';
 
 type Periodo = 'recientes' | 'anio' | 'todo';
 
-export function Finanzas() {
+export function Finanzas({ embed }: { embed?: boolean } = {}) {
   const juego = useGame(s => s.juego)!;
   const [periodo, setPeriodo] = useState<Periodo>('recientes');
   const hoy = juego.semanaAbs;
@@ -27,8 +27,8 @@ export function Finanzas() {
 
   return (
     <>
-      <TopBar titulo="Finanzas" />
-      <div className="scroll">
+      {!embed && <TopBar titulo="Finanzas" />}
+      <div className={embed ? '' : 'scroll'}>
         <div className="stack">
           <Seg<Periodo> valor={periodo} onChange={setPeriodo} items={[{ id: 'recientes', label: '12 semanas' }, { id: 'anio', label: `Año ${anio(hoy)}` }, { id: 'todo', label: 'Histórico' }]} />
 
@@ -66,7 +66,7 @@ export function Finanzas() {
             {CAT_GASTO.map(c => <div key={c} className="kv"><span className="k">{CAT_LABEL[c]}</span><span className="v">{res.porCat[c] ? dinero(-res.porCat[c]!) : '—'}</span></div>)}
             <p className="muted small" style={{ marginTop: 8 }}>Gasto fijo de operación: {dinero(costoOperacion(juego))} por semana (crece con tus peleadores y tu fama). {fecha(hoy)}.</p>
           </div>
-          <p className="muted small center">Patrocinios de la empresa, TV y PPV llegan en la Fase 5.</p>
+          <p className="muted small center">Todos los ingresos externos entran por contratos: míralos en las pestañas Patrocinios, Televisión y Ofertas.</p>
         </div>
       </div>
     </>

@@ -51,7 +51,7 @@ export function Sedes() {
                 <div className="mid ellipsis">{s.nombre}</div>
                 <div className="muted small">{s.ciudad} · {TIPO_SEDE_LABEL[s.tipo]}</div>
                 <div className="small">Aforo <b>{s.aforo.toLocaleString('en-US')}</b> · Renta <b>{dinero(s.costo)}</b></div>
-                {!libre && <div className="small" style={{ color: 'var(--warn)' }}>{s.soloOferta ? 'Solo con ofertas de inversionistas (Fase 5)' : `Requiere popularidad ${s.popMin}`}</div>}
+                {!libre && <div className="small" style={{ color: 'var(--warn)' }}>{s.soloOferta ? 'Se desbloquea con un contrato de inversionista de ese país (Negocios → Ofertas)' : `Requiere popularidad ${s.popMin}`}</div>}
               </span>
               {!libre && <span className="muted" style={{ width: 20 }}><Icon name="lock" /></span>}
               {actual && <span className="accent" style={{ width: 22 }}><Icon name="check" /></span>}

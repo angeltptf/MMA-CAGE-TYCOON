@@ -2,6 +2,7 @@ import { ECONOMIA, MATCHMAKING } from '../config/economia';
 import { PELEADOR } from '../config/balance';
 import { SEDES, SEDE_POR_ID, SEDE_INICIAL, type Sede } from '../config/sedes';
 import { popularidadEmpresa } from './empresa';
+import { estimarNegocios, perks } from './negocios';
 import { probVictoria, momio } from './motor';
 import { Rng, clamp } from './rng';
 import { regionDePais } from './worldgen';
@@ -36,7 +37,9 @@ export function sedeDe(e: Evento): Sede {
   return SEDE_POR_ID[e.sedeId] ?? SEDE_INICIAL;
 }
 
-export const sedeDesbloqueada = (j: Juego, s: Sede) => !s.soloOferta && popularidadEmpresa(miComp(j)) >= s.popMin;
+export const sedeDesbloqueada = (j: Juego, s: Sede) =>
+  j.negocios.some(n => n.estado === 'activo' && n.tipo === 'inversion' && n.inv?.pais === s.pais)
+  || (!s.soloOferta && popularidadEmpresa(miComp(j)) >= s.popMin);
 
 export function peleadoresEnEvento(e: Evento): number[] {
   return e.cartelera.flatMap(b => [b.aId, b.bId]).filter((x): x is number => x != null);
@@ -153,7 +156,7 @@ export function estimarBoletos(j: Juego, e: Evento, precio = e.precio, hypeForza
   const bonusLocal = Math.min(2, locales) * d.bonusLocal;
   const calidad = 0.5 * hype + 0.5 * pop;
   const precioRef = d.precioRef * Math.exp(d.precioK * calidad);
-  const base = potencial * m * (1 + bonusLocal);
+  const base = potencial * m * (1 + bonusLocal) * perks(j).taquilla;
   const demanda = base * Math.pow(Math.max(0.01, precio) / precioRef, -d.elasticidad);
   const vendidos = Math.max(0, Math.min(sede.aforo, Math.round(demanda)));
   // el precio máximo con el que aún se llena la sede (o el de referencia si sobra aforo)
@@ -171,7 +174,8 @@ export interface Costos {
   bolsas: number;
   bonosVictoria: number;
   total: number;
-  transmision: number;
+  transmision: number;   // televisión, YouTube y PPV (mi parte)
+  extras: number;        // patrocinios por evento e inversionistas
 }
 
 export function costosEvento(j: Juego, e: Evento, hype = hypeEvento(j, e)): Costos {
@@ -185,6 +189,7 @@ export function costosEvento(j: Juego, e: Evento, hype = hypeEvento(j, e)): Cost
   if (sede.pais !== mia.pais) {
     viaje = c.viajeBase + c.viajePorPelea * n;
     if (regionDePais(sede.pais) !== regionDePais(mia.pais)) viaje *= c.viajeOtraRegion;
+    viaje *= perks(j).viaje;
   }
   let bolsas = 0;
   let bonos = 0;
@@ -194,15 +199,13 @@ export function costosEvento(j: Juego, e: Evento, hype = hypeEvento(j, e)): Cost
     bolsas += (pa?.contrato?.bolsa ?? 0) + (pb?.contrato?.bolsa ?? 0);
     bonos += ((pa?.contrato?.bonoVictoria ?? 0) + (pb?.contrato?.bonoVictoria ?? 0)) / 2;
   }
-  const t = ECONOMIA.transmision;
-  const transmision = Math.round(
-    t.base * Math.exp(t.k * popularidadEmpresa(mia)) * (t.hypeMin + hype / t.hypeDivisor)
-    * (1 + t.porPelea * n) * (e.tipo === 'ppv' ? t.ppvMult : 1),
-  );
+  const neg = estimarNegocios(j, e, hype);
+  const transmision = neg.tv + neg.youtube + neg.ppv;
+  const extras = neg.patrocinios + neg.inversion;
   const renta = sede.costo;
   const produccion = Math.round(prod);
   return {
-    renta, produccion, viaje: Math.round(viaje), bolsas: Math.round(bolsas), bonosVictoria: Math.round(bonos), transmision,
+    renta, produccion, viaje: Math.round(viaje), bolsas: Math.round(bolsas), bonosVictoria: Math.round(bonos), transmision, extras,
     total: Math.round(renta + produccion + viaje + bolsas + bonos),
   };
 }

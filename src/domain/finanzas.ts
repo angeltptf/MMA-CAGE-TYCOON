@@ -5,14 +5,14 @@ import { popularidadEmpresa } from './empresa';
 import type { FilaFinanza, Juego } from './types';
 
 export type CatFinanza =
-  | 'taquilla' | 'transmision' | 'patrocinios' | 'traspasos' | 'otros'
+  | 'taquilla' | 'transmision' | 'ppv' | 'patrocinios' | 'inversionistas' | 'traspasos' | 'otros'
   | 'sedes' | 'produccion' | 'viaje' | 'bolsas' | 'bonos' | 'premios' | 'fichajes' | 'indemnizaciones' | 'operacion';
 
-export const CAT_INGRESO: CatFinanza[] = ['taquilla', 'transmision', 'patrocinios', 'traspasos', 'otros'];
+export const CAT_INGRESO: CatFinanza[] = ['taquilla', 'transmision', 'ppv', 'patrocinios', 'inversionistas', 'traspasos', 'otros'];
 export const CAT_GASTO: CatFinanza[] = ['sedes', 'produccion', 'viaje', 'bolsas', 'bonos', 'premios', 'fichajes', 'indemnizaciones', 'operacion'];
 
 export const CAT_LABEL: Record<CatFinanza, string> = {
-  taquilla: 'Taquilla', transmision: 'Transmisión', patrocinios: 'Patrocinios', traspasos: 'Traspasos de peleadores', otros: 'Otros ingresos',
+  taquilla: 'Taquilla', transmision: 'Televisión y YouTube', ppv: 'Pay-per-view', patrocinios: 'Patrocinios', inversionistas: 'Inversionistas (neto)', traspasos: 'Traspasos de peleadores', otros: 'Otros ingresos',
   sedes: 'Renta de sedes', produccion: 'Producción', viaje: 'Viajes', bolsas: 'Bolsas de peleadores', bonos: 'Bonos y victorias',
   premios: 'Premios de torneo', fichajes: 'Fichajes y renovaciones', indemnizaciones: 'Indemnizaciones', operacion: 'Operación (staff y gimnasio)',
 };
@@ -53,11 +53,12 @@ export function costoOperacion(j: Juego): number {
   const o = ECONOMIA.operacion;
   const mia = j.companias.find(c => c.esMia)!;
   const mios = j.peleadores.reduce((n, p) => n + (p.companiaId === j.miId && !p.retirado ? 1 : 0), 0);
-  return Math.round((o.base + o.porPeleador * mios) * Math.exp(o.k * popularidadEmpresa(mia)));
+  const descuento = j.negocios.some(n => n.estado === 'activo' && n.tipo === 'patrocinio' && n.perk === 'operacion') ? 0.9 : 1;
+  return Math.round((o.base + o.porPeleador * mios) * Math.exp(o.k * popularidadEmpresa(mia)) * descuento);
 }
 
 // Ingresos de las últimas 52 semanas (alimenta el ranking de compañías)
 export function ingresosAnuales(j: Juego): number {
   const r = resumenPeriodo(j, j.semanaAbs - 51, j.semanaAbs);
-  return Math.round((r.porCat.taquilla ?? 0) + (r.porCat.transmision ?? 0) + (r.porCat.patrocinios ?? 0));
+  return Math.round((r.porCat.taquilla ?? 0) + (r.porCat.transmision ?? 0) + (r.porCat.ppv ?? 0) + (r.porCat.patrocinios ?? 0) + (r.porCat.inversionistas ?? 0));
 }

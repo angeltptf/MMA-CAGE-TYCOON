@@ -10,7 +10,11 @@ import {
   clausulaDe, contratoSugerido, factorFisico, factorTecnico, estrellasCalif, scoreCalif,
 } from './peleador';
 import { Rng, clamp } from './rng';
+import { YOUTUBE } from '../config/negocios';
+import { ofertasIniciales } from './negocios';
 import { rcdVacio } from './migracion';
+import { regionDePais } from './regiones';
+export { regionDePais } from './regiones';
 import { recalcularRankings } from './rankings';
 import type {
   ClaseId, Compania, Disciplina, Division, Estilo, Genero, Juego, NuevaPartida, Peleador, Rec,
@@ -224,16 +228,6 @@ function cfgACompania(c: CompaniaCfg): Compania {
   };
 }
 
-const REGION_DE_PAIS: Record<string, string> = {
-  MX: 'mexico', US: 'eeuu', CA: 'eeuu', BR: 'latam', AR: 'latam', CO: 'latam', CL: 'latam',
-  JP: 'asia', KR: 'asia', CN: 'asia', TH: 'asia', PH: 'asia', SG: 'asia', KZ: 'asia',
-  AE: 'medioOriente', SA: 'medioOriente', QA: 'medioOriente',
-};
-
-export function regionDePais(code: string): string {
-  return REGION_DE_PAIS[code] ?? 'europa';
-}
-
 export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Juego {
   const rng = new Rng(semilla);
   const usados = new Set<string>();
@@ -294,7 +288,7 @@ export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Jue
     version: 1, nombre: nueva.nombre, dificultad: nueva.dificultad, miId,
     semanaAbs: 0, rngState: rng.state, sigId: id, sigNoticia: 1,
     companias, peleadores, divisiones, eventos: [], ofertas: [], sigEvento: 1, sigPelea: 1, sigOferta: 1,
-    contadores: { ppv: 0, noche: 0 }, torneos: [], finanzas: [], cajaHist: [], sigTorneo: 1, poblacionObjetivo: id - 1, noticias: [],
+    contadores: { ppv: 0, noche: 0 }, torneos: [], finanzas: [], cajaHist: [], negocios: [], sigNegocio: 1, cooldownPropuestas: 0, youtube: { subs: YOUTUBE.subsIniciales, vistas: 0, ingresos: 0, virales: 0 }, sigTorneo: 1, poblacionObjetivo: id - 1, noticias: [],
     ajustes: {
       unidades: 'metrico', gameOver: true, velocidadSim: 2, nombresDivision: 'es',
       recordatorioRespaldo: true,
@@ -302,6 +296,8 @@ export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Jue
     ultimoRespaldo: Date.now(), semanasEnNegativo: 0,
   };
   recalcularRankings(j, undefined, true);
+  ofertasIniciales(j, rng);
+  j.rngState = rng.state;
   j.noticias.push({
     id: j.sigNoticia++, semana: 0, categoria: 'importante', leida: false,
     titulo: `¡Bienvenido a ${nueva.nombre}!`,

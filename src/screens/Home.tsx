@@ -30,6 +30,7 @@ export function Home() {
   const pa = principal ? juego.peleadores.find(p => p.id === principal.aId) : undefined;
   const pb = principal ? juego.peleadores.find(p => p.id === principal.bId) : undefined;
   const ofertas = juego.ofertas.filter(o => o.estado === 'pendiente');
+  const negociosPend = juego.negocios.filter(n => n.estado === 'oferta');
   const dias = (Date.now() - juego.ultimoRespaldo) / 86_400_000;
   const pedirRespaldo = juego.ajustes.recordatorioRespaldo && dias >= RANGO_RESPALDO_DIAS;
 
@@ -107,12 +108,17 @@ export function Home() {
           <button className="btn" onClick={() => nav('/eventos')}><Icon name="calendar" />Calendario</button>
         </div>
 
-        {(lesionados.length > 0 || vencen.length > 0 || ofertas.length > 0 || pedirRespaldo || mios.length === 0) && (
+        {(lesionados.length > 0 || vencen.length > 0 || ofertas.length > 0 || negociosPend.length > 0 || pedirRespaldo || mios.length === 0) && (
           <div className="stack" style={{ gap: 8 }}>
             <div className="section-title" style={{ marginBottom: 0 }}>Alertas</div>
             {mios.length === 0 && (
               <button className="alert warn" onClick={() => nav('/peleadores')}>
                 <Icon name="users" /><div className="grow" style={{ textAlign: 'left' }}>Aún no tienes peleadores. Ficha agentes libres para empezar.</div>
+              </button>
+            )}
+            {negociosPend.length > 0 && (
+              <button className="alert warn" onClick={() => nav('/negocios')}>
+                <Icon name="briefcase" /><div className="grow" style={{ textAlign: 'left' }}>{negociosPend.length} oferta{negociosPend.length > 1 ? 's' : ''} de patrocinadores, TV o inversionistas esperan tu respuesta</div>
               </button>
             )}
             {ofertas.length > 0 && (

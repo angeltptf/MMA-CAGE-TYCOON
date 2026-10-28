@@ -158,6 +158,7 @@ export interface Noticia {
   leida: boolean;
   grupo?: string;             // avisos repetidos se agrupan por esta clave
   ofertaId?: number;
+  negocioId?: number;
   veces?: number;
   peleadorId?: number;
 }
@@ -173,6 +174,68 @@ export interface Ajustes {
 export interface FilaFinanza { semana: number; cat: string; monto: number }
 export interface CajaPunto { semana: number; caja: number }
 
+// ---------- Negocios: patrocinios, televisión e inversionistas (todo por contratos) ----------
+export type TipoNegocio = 'patrocinio' | 'tv' | 'inversion';
+export type RubroTV = 'bares' | 'redes' | 'streaming_nicho' | 'tv_abierta' | 'cable' | 'streaming_global' | 'ppv' | 'documental';
+export type ModalidadInv = 'unico' | 'paquete' | 'residencia' | 'capital' | 'subsidio';
+
+export interface ObjetivoNegocio {
+  id: string;
+  tipo: 'eventos' | 'lleno' | 'pais' | 'titulos' | 'popularidad' | 'estrellas';
+  meta: number;
+  pais?: string;
+  bono: number;
+  progreso: number;
+  cumplido: boolean;
+}
+
+export interface CondicionInv { tipo: 'titulo' | 'estrellas' | 'local'; meta: number }
+
+export interface DatosInversion {
+  modalidad: ModalidadInv;
+  pais: string;                 // país anfitrión (o sede del fondo)
+  eventos: number;              // cuántos eventos incluye
+  eventosHechos: number;
+  condiciones: CondicionInv[];
+  pctUtilidades: number;        // capital: % de las utilidades de cada evento que se queda el inversionista
+  semanaObjetivo: number;
+  eventoIds: number[];
+}
+
+export interface Negocio {
+  id: number;
+  tipo: TipoNegocio;
+  estado: 'oferta' | 'activo' | 'terminado' | 'rechazado' | 'expirado' | 'roto';
+  nombre: string;               // marca, cadena o fondo
+  rubro: string;                // categoría de patrocinio, tipo de TV o modalidad
+  region: string;               // 'global' o región (mexico, eeuu, latam...)
+  detalle: string;
+  pagoAnual: number;            // se paga por semana (anual / 52)
+  pagoUnico: number;            // bono de firma
+  pagoPorEvento: number;        // extra por cada evento realizado
+  duracionAnios: number;
+  exclusivo: boolean;
+  ppvPct?: number;              // PPV: lo que se queda el socio de las compras
+  eventosMinAnio?: number;      // TV: mínimo de eventos al año
+  penalizacion: number;         // multa por incumplir o romper (se calcula al momento)
+  objetivos: ObjetivoNegocio[];
+  popMin: number;
+  margen: number;               // hasta cuánto más pagarían (oculto)
+  contraIntentada: boolean;
+  perk?: string;
+  factorCripto?: number;        // patrocinio cripto: el pago se mueve con el mercado
+  semanaCreada: number;
+  semanaVence: number;          // hasta cuándo vale la oferta
+  semanaInicio?: number;
+  semanaFin?: number;
+  eventosPeriodo: number;       // eventos realizados en el año contractual actual
+  pagoTotal: number;            // dinero cobrado hasta hoy
+  inv?: DatosInversion;
+  renovacion?: boolean;
+}
+
+export interface CanalYoutube { subs: number; vistas: number; ingresos: number; virales: number }
+
 export interface Juego {
   version: number;
   nombre: string;             // nombre de la partida (empresa)
@@ -186,6 +249,10 @@ export interface Juego {
   peleadores: Peleador[];
   divisiones: Division[];
   eventos: Evento[];
+  negocios: Negocio[];
+  sigNegocio: number;
+  youtube: CanalYoutube;
+  cooldownPropuestas: number; // semana desde la que se pueden pedir propuestas otra vez
   finanzas: FilaFinanza[];     // libro de movimientos (por semana y categoría)
   cajaHist: CajaPunto[];      // caja al final de cada semana
   torneos: Torneo[];
@@ -277,6 +344,10 @@ export interface FinanzasEvento {
   bonosVictoria: number;
   bonosNoche: number;
   premios: number;            // premios de torneo
+  ppv?: number;               // ingreso por compras de PPV (mi parte)
+  inversion?: number;         // pago de inversionistas por este evento
+  compradoresPPV?: number;
+  vistasYoutube?: number;
   neto: number;
   popularidad: number;        // puntos ganados (o perdidos) por la empresa
   clima?: string;
@@ -298,6 +369,9 @@ export interface Evento {
   finanzas?: FinanzasEvento;
   torneoId?: number;
   bonos?: BonosNoche;
+  precioPPV?: number;
+  inversionistaId?: number;     // evento pactado con un inversionista
+  patrocinadorNaming?: string;
 }
 
 export interface BonosNoche {

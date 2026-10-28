@@ -4,7 +4,7 @@ import { fechaCorta } from '../domain/format';
 import { borrarNoticias, marcarNoticia } from '../domain/acciones';
 import type { CategoriaNoticia } from '../domain/types';
 import { useGame } from '../store/game';
-import { acciones } from '../store/game';
+import { acciones, negocios as acN } from '../store/game';
 import { Icon } from '../ui/Icon';
 import { Tabs, TopBar, Vacio } from '../ui/kit';
 
@@ -52,6 +52,13 @@ export function Noticias() {
             {abierta === n.id && (n.cuerpo || n.peleadorId) && (
               <div className="stack" style={{ paddingLeft: 62, gap: 8 }}>
                 {n.cuerpo && <p className="muted">{n.cuerpo}</p>}
+                {n.negocioId != null && juego.negocios.find(o => o.id === n.negocioId)?.estado === 'oferta' && (
+                  <div className="row">
+                    <button className="btn small primary grow" onClick={e => { e.stopPropagation(); acN.aceptar(n.negocioId!); }}>Aceptar</button>
+                    <button className="btn small danger grow" onClick={e => { e.stopPropagation(); acN.rechazar(n.negocioId!); }}>Rechazar</button>
+                    <button className="btn small grow" onClick={e => { e.stopPropagation(); nav('/negocios'); }}>Ver en Negocios</button>
+                  </div>
+                )}
                 {n.ofertaId != null && juego.ofertas.find(o => o.id === n.ofertaId)?.estado === 'pendiente' && (
                   <div className="row">
                     <button className="btn small primary grow" onClick={e => { e.stopPropagation(); acciones.aceptarOferta(n.ofertaId!); }}>Aceptar</button>

@@ -15,6 +15,7 @@ import { nombreCompleto, recordTxt } from './peleador';
 import { pagoPorPelea } from './patrociniosPersonales';
 import { ptsDe, recalcularRankings } from './rankings';
 import { Rng, clamp } from './rng';
+import { liquidarEvento, pagarReparto } from './negocios';
 import { avanzarGanador, etiquetaPartido, torneoDe } from './torneos';
 import type {
   Evento, Instantanea, Juego, Pelea, Peleador, ResultadoPelea, Resultado, StatsPelea,
@@ -215,8 +216,11 @@ export function realizarEvento(j: Juego, id: number): string | null {
   }
   const costos = costosEvento(j, e, hype);
   const taquilla = vendidos * e.precio;
+  const liq = liquidarEvento(j, e, hype, vendidos, rng);
   const gastos = costos.renta + costos.produccion + costos.viaje + bolsas + bonosV + premios;
-  const neto = Math.round(taquilla + costos.transmision - gastos);
+  let neto = Math.round(taquilla + liq.total - gastos);
+  const reparto = pagarReparto(j, neto);
+  neto -= reparto;
   const llenado = sede.aforo ? vendidos / sede.aforo : 0;
   const pp = ECONOMIA.popularidad;
   const { region, pop } = popRegionDe(j, sede);
@@ -227,7 +231,6 @@ export function realizarEvento(j: Juego, id: number): string | null {
   mia.fans += Math.round(vendidos * 0.8 + hype * 25);
   mia.reputacion = clamp(mia.reputacion + (neto >= 0 ? 0.3 : 0.1) + hype / 400, 0, 100);
   mover(j, 'taquilla', taquilla);
-  mover(j, 'transmision', costos.transmision);
   mover(j, 'sedes', -costos.renta);
   mover(j, 'produccion', -costos.produccion);
   mover(j, 'viaje', -costos.viaje);
@@ -237,9 +240,10 @@ export function realizarEvento(j: Juego, id: number): string | null {
 
   e.estado = 'realizado';
   e.finanzas = {
-    precio: e.precio, aforo: sede.aforo, boletosVendidos: vendidos, taquilla, transmision: costos.transmision, patrocinios: 0,
+    precio: e.precio, aforo: sede.aforo, boletosVendidos: vendidos, taquilla, transmision: liq.transmision, patrocinios: liq.patrocinios,
+    ppv: liq.ppv, inversion: liq.inversion - reparto, compradoresPPV: liq.compradores, vistasYoutube: liq.vistas,
     renta: costos.renta, produccion: costos.produccion, viaje: costos.viaje, bolsas: Math.round(bolsas),
-    bonosVictoria: Math.round(bonosV), bonosNoche: 0, premios, neto, popularidad: Math.round(gana * 100) / 100, clima,
+    bonosVictoria: Math.round(bonosV), bonosNoche: 0, premios, neto, popularidad: Math.round(gana * 100) / 100, clima: [clima, ...liq.notas].filter(Boolean).join(' ') || undefined,
   };
   e.bonos = sugerirBonos(j, e);
 

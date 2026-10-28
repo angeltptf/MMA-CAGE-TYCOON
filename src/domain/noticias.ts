@@ -7,6 +7,7 @@ export interface NuevaNoticia {
   grupo?: string;
   peleadorId?: number;
   ofertaId?: number;
+  negocioId?: number;
 }
 
 // Agrupa avisos repetidos: si ya hay uno sin leer con el mismo grupo, solo sube el contador.

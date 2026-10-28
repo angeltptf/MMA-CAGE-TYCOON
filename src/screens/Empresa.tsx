@@ -3,6 +3,7 @@ import { EMPRESA, REGION_LABEL } from '../config/balance';
 import { PAISES_SEDE, bandera, nombrePais } from '../config/paises';
 import { alcance, miEmpresa, popularidadEmpresa } from '../domain/empresa';
 import { dinero, fecha, numeroCorto } from '../domain/format';
+import { activos, ingresoAnualContratos } from '../domain/negocios';
 import { useGame } from '../store/game';
 import { BarraValor, TopBar } from '../ui/kit';
 
@@ -51,6 +52,11 @@ export function Empresa() {
             <div className="kv"><span className="k">Alcance</span><span className="v accent">{alcance(pop)} ({pop}/100)</span></div>
             <div className="kv"><span className="k">Caja</span><span className="v">{dinero(c.dinero)}</span></div>
             <div className="kv"><span className="k">Fans</span><span className="v">{numeroCorto(c.fans)}</span></div>
+            <div className="kv"><span className="k">Patrocinadores activos</span><span className="v">{activos(juego, 'patrocinio').length}</span></div>
+            <div className="kv"><span className="k">Contratos de transmisión</span><span className="v">{activos(juego, 'tv').length}</span></div>
+            <div className="kv"><span className="k">Inversionistas</span><span className="v">{activos(juego, 'inversion').length}</span></div>
+            <div className="kv"><span className="k">Ingreso fijo anual por contratos</span><span className="v accent">{dinero(ingresoAnualContratos(juego))}</span></div>
+            <div className="kv"><span className="k">Suscriptores de YouTube</span><span className="v">{numeroCorto(juego.youtube.subs)}</span></div>
           </div>
 
           <div className="card stack">
@@ -61,8 +67,11 @@ export function Empresa() {
 
           <div className="card">
             <h3>Finanzas y logros</h3>
-            <p className="muted small">Los logros llegan en la Fase 7. Patrocinios de la empresa y TV, en la Fase 5.</p>
-            <button className="btn" style={{ marginTop: 10 }} onClick={() => nav('/finanzas')}>Ver finanzas completas</button>
+            <p className="muted small">Los logros llegan en la Fase 7.</p>
+            <div className="stack" style={{ marginTop: 10 }}>
+              <button className="btn" onClick={() => nav('/negocios')}>Ir a Negocios</button>
+              <button className="btn" onClick={() => nav('/finanzas')}>Ver finanzas completas</button>
+            </div>
           </div>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { DetallePelea } from './screens/DetallePelea';
 import { Editor } from './screens/Editor';
 import { Evento } from './screens/Evento';
 import { Eventos } from './screens/Eventos';
+import { Negocios } from './screens/Negocios';
 import { Noche } from './screens/Noche';
 import { ProgramarPelea } from './screens/ProgramarPelea';
 import { Sedes } from './screens/Sedes';
@@ -71,7 +72,7 @@ export function App() {
             <Route path="/evento/:id/pelea/:peleaId" element={<ProgramarPelea />} />
             <Route path="/pelea/:eventoId/:peleaId" element={<DetallePelea />} />
             <Route path="/noche/:id" element={<Noche />} />
-            <Route path="/negocios" element={<Proximamente titulo="Negocios" fase="Fase 5" texto="Patrocinios, derechos de TV, PPV y ofertas de inversionistas." tab />} />
+            <Route path="/negocios" element={<Negocios />} />
             <Route path="/mas" element={<Mas />} />
             <Route path="/divisiones" element={<Divisiones />} />
             <Route path="/rankings" element={<Rankings />} />

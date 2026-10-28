@@ -8,6 +8,8 @@ import { ECONOMIA } from '../config/economia';
 import { SEDE_POR_ID } from '../config/sedes';
 import { bandera } from '../config/paises';
 import { costosEvento, estaCompleto, estimarBoletos, hypeEvento, sedeDe } from '../domain/eventos';
+import { estimarNegocios } from '../domain/negocios';
+import { nombrePais } from '../config/paises';
 import { dinero, fecha, numeroCorto } from '../domain/format';
 import type { Evento as EventoT, Pelea } from '../domain/types';
 import { eventos as acc, useGame } from '../store/game';
@@ -143,8 +145,10 @@ function Boletos({ e, onCancelar }: { e: EventoT; onCancelar: () => void }) {
   const hype = hypeEvento(juego, e);
   const est = estimarBoletos(juego, e);
   const costos = costosEvento(juego, e, hype);
-  const ingresos = est.taquilla + costos.transmision;
+  const neg = estimarNegocios(juego, e, hype);
+  const ingresos = est.taquilla + costos.transmision + costos.extras;
   const neto = ingresos - costos.total;
+  const inv = e.inversionistaId != null ? juego.negocios.find(n => n.id === e.inversionistaId) : undefined;
   const paso = e.precio < 50 ? 1 : e.precio < 200 ? 5 : e.precio < 1000 ? 25 : 100;
   const llenado = sede.aforo ? est.vendidos / sede.aforo : 0;
 
@@ -202,6 +206,38 @@ function Boletos({ e, onCancelar }: { e: EventoT; onCancelar: () => void }) {
         </div>
       </div>
 
+      {inv && inv.inv && (
+        <div className="card">
+          <h3>Evento pactado con {inv.nombre}</h3>
+          <p className="muted small">Pagan {dinero(inv.pagoPorEvento)} si cumples las condiciones (si no, solo la mitad y baja tu reputación). Si borras este evento pagas una multa.</p>
+          {inv.inv.condiciones.length === 0 && <div className="small muted">Sin condiciones especiales.</div>}
+          {inv.inv.condiciones.map((c, i) => (
+            <div key={i} className="kv"><span className="k">Condición</span><span className="v">{c.tipo === 'titulo' ? 'Una pelea de campeonato' : c.tipo === 'estrellas' ? `${c.meta} peleador(es) de nivel Estelar o superior` : `Un peleador de ${nombrePais(inv.inv!.pais)}`}</span></div>
+          ))}
+        </div>
+      )}
+
+      {e.tipo === 'ppv' && (
+        <div className="card stack">
+          <h3 style={{ marginBottom: 0 }}>Pay-per-view</h3>
+          {neg.tienePPV ? (
+            <>
+              <div className="row between">
+                <span className="label">Precio del PPV</span>
+                <Stepper valor={neg.precioPPV} min={5} max={500} paso={5} formato={dinero} editable onChange={v => acc.configurar(e.id, { precioPPV: v })} />
+              </div>
+              <div className="estimate">
+                <div className="row between"><span className="muted">Compras estimadas</span><b className="num">{neg.compradores.toLocaleString('en-US')}</b></div>
+                <div className="row between"><span className="muted">Tu parte ({Math.round((1 - (neg.ppvPct ?? 0)) * 100)}%)</span><b className="num">{dinero(neg.ppv)}</b></div>
+                <div className="muted small" style={{ marginTop: 6 }}>Precio de referencia {dinero(neg.precioPPVref)}. Más caro vende menos; el socio se queda con el {Math.round((neg.ppvPct ?? 0) * 100)}% y te da una garantía por evento.</div>
+              </div>
+            </>
+          ) : (
+            <p className="muted small">Para cobrar PPV firma un contrato de pay-per-view en Negocios → Televisión (se desbloquea con popularidad 30 en una región o en el mundo).</p>
+          )}
+        </div>
+      )}
+
       <div className="card">
         <h3>Costos y balance estimado</h3>
         <div className="kv"><span className="k">Renta de la sede</span><span className="v">{dinero(costos.renta)}</span></div>
@@ -210,9 +246,13 @@ function Boletos({ e, onCancelar }: { e: EventoT; onCancelar: () => void }) {
         <div className="kv"><span className="k">Bolsas</span><span className="v">{dinero(costos.bolsas)}</span></div>
         <div className="kv"><span className="k">Bonos por victoria (est.)</span><span className="v">{dinero(costos.bonosVictoria)}</span></div>
         <div className="kv"><span className="k">Costo total</span><span className="v">{dinero(costos.total)}</span></div>
-        <div className="kv"><span className="k">Transmisión digital (est.)</span><span className="v">{dinero(costos.transmision)}</span></div>
+        <div className="kv"><span className="k">Televisión (est.)</span><span className="v">{dinero(neg.tv)}</span></div>
+        <div className="kv"><span className="k">YouTube (est.) · {neg.vistas.toLocaleString('en-US')} vistas</span><span className="v">{dinero(neg.youtube)}</span></div>
+        {neg.ppv > 0 && <div className="kv"><span className="k">PPV (est.)</span><span className="v">{dinero(neg.ppv)}</span></div>}
+        {neg.patrocinios > 0 && <div className="kv"><span className="k">Patrocinios por evento</span><span className="v">{dinero(neg.patrocinios)}</span></div>}
+        {neg.inversion > 0 && <div className="kv"><span className="k">Inversionistas</span><span className="v">{dinero(neg.inversion)}</span></div>}
         <div className="kv"><span className="k">Neto estimado</span><span className={`v ${neto >= 0 ? 'neto-pos' : 'neto-neg'}`}>{dinero(neto, true)}</span></div>
-        <p className="muted small" style={{ marginTop: 8 }}>La plataforma de TV, el PPV y los patrocinios llegan en la Fase 5; mientras tanto la transmisión digital aporta un ingreso base. Aforo de {numeroCorto(sede.aforo)}.</p>
+        <p className="muted small" style={{ marginTop: 8 }}>Los pagos fijos anuales de patrocinadores y cadenas entran semana a semana (Negocios). Aquí solo ves lo que genera este evento. Aforo de {numeroCorto(sede.aforo)}.</p>
       </div>
 
       <button className="btn danger" onClick={onCancelar}><Icon name="trash" />Eliminar evento</button>
