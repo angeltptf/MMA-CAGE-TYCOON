@@ -73,7 +73,15 @@ export interface Peleador {
   descansoHasta: number;      // semana absoluta; no puede pelear antes
   peleas: HistorialPelea[];   // últimas peleas (la más reciente primero)
   rankPts: number;            // puntos de ranking en mi empresa (suben y bajan con resultados)
+  patrocinios: PatrocinioPersonal[];
   rcd: RecordsPeleador;
+}
+
+export interface PatrocinioPersonal {
+  marca: string;
+  categoria: string;
+  pagoAnual: number;
+  semanaFin: number;
 }
 
 export interface RecordsPeleador {
@@ -107,7 +115,7 @@ export interface HistorialPelea {
   rivalRecord: string;
   miRank: number;             // 0 = campeón, 99 = sin ranking
   rivalRank: number;
-  ganancia?: { bolsa: number; victoria: number; campeonato: number; finalizacion: number; noche: number };
+  ganancia?: { bolsa: number; victoria: number; campeonato: number; finalizacion: number; noche: number; patrocinio?: number };
   etiquetaTorneo?: string;
 }
 
@@ -162,6 +170,9 @@ export interface Ajustes {
   recordatorioRespaldo: boolean;
 }
 
+export interface FilaFinanza { semana: number; cat: string; monto: number }
+export interface CajaPunto { semana: number; caja: number }
+
 export interface Juego {
   version: number;
   nombre: string;             // nombre de la partida (empresa)
@@ -175,6 +186,8 @@ export interface Juego {
   peleadores: Peleador[];
   divisiones: Division[];
   eventos: Evento[];
+  finanzas: FilaFinanza[];     // libro de movimientos (por semana y categoría)
+  cajaHist: CajaPunto[];      // caja al final de cada semana
   torneos: Torneo[];
   sigTorneo: number;
   ofertas: OfertaTraspaso[];

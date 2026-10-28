@@ -6,6 +6,8 @@ export function normalizarJuego(j: Juego): Juego {
   x.eventos ??= [];
   x.ofertas ??= [];
   x.torneos ??= [];
+  x.finanzas ??= [];
+  x.cajaHist ??= [];
   x.sigTorneo ??= 1;
   x.sigEvento ??= 1;
   x.sigPelea ??= 1;
@@ -18,6 +20,7 @@ export function normalizarJuego(j: Juego): Juego {
     p.descansoHasta ??= 0;
     p.peleas ??= [];
     p.rankPts ??= 0;
+    p.patrocinios ??= [];
     p.rcd ??= rcdVacio();
   }
   for (const e of j.eventos) {

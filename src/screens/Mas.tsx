@@ -14,6 +14,7 @@ export function Mas() {
         <Fila icono="trophy" titulo="Divisiones" detalle="Crea y administra tus divisiones" onClick={() => nav('/divisiones')} />
         <Fila icono="chart" titulo="Rankings" detalle="Por compañía, global y libra por libra" onClick={() => nav('/rankings')} />
         <Fila icono="building" titulo="Ranking de compañías" detalle="Tú contra UFC, ONE, PFL y más" onClick={() => nav('/companias')} />
+        <Fila icono="chart" titulo="Finanzas" detalle="Caja, ingresos, gastos y gráfica" onClick={() => nav('/finanzas')} />
         <Fila icono="building" titulo="Empresa" detalle="Nombre, siglas, color y resumen" onClick={() => nav('/empresa')} />
         <Fila icono="edit" titulo="Editor de peleadores" detalle="Crea o modifica peleadores" onClick={() => nav('/editor/nuevo')} />
         <Fila icono="trophy" titulo="Torneos" detalle="Llaves de 4, 8 o 16 peleadores" onClick={() => nav('/torneos')} />

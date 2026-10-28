@@ -8,6 +8,7 @@ import {
   recordTxt, totalPeleas,
 } from '../domain/peleador';
 import { exigencia } from '../domain/negociacion';
+import { pagoPorPelea } from '../domain/patrociniosPersonales';
 import { mapaRankings } from '../domain/rankings';
 import type { Peleador } from '../domain/types';
 import { acciones, miCompania, useGame } from '../store/game';
@@ -220,7 +221,19 @@ function ContratoTab({ p }: { p: Peleador }) {
 
       <div className="card">
         <h3>Patrocinios personales</h3>
-        <p className="muted small">Los peleadores consiguen sus propios patrocinios según su popularidad (Fase 5). Suben su moral y su exigencia al renovar.</p>
+        {p.patrocinios.length === 0 ? (
+          <p className="muted small">Sin patrocinadores todavía. Los consigue solo cuando se vuelve popular; le suben la moral y lo hacen pedir más al renegociar.</p>
+        ) : (
+          <>
+            {p.patrocinios.map(s => (
+              <div key={s.marca} className="kv">
+                <span className="k">{s.marca}<div className="small">{s.categoria} · vence {fechaCorta(s.semanaFin)}</div></span>
+                <span className="v">{dinero(s.pagoAnual)}/año</span>
+              </div>
+            ))}
+            <p className="muted small" style={{ marginTop: 8 }}>Le pagan directamente {dinero(pagoPorPelea(p))} por pelea. No sale de tu caja.</p>
+          </>
+        )}
       </div>
 
       {negociando && <NegociarSheet p={p} modo={negociando} onClose={() => setNegociando(null)} />}
@@ -318,7 +331,8 @@ function Records({ p }: { p: Peleador }) {
 
 function Ganancias({ p }: { p: Peleador }) {
   const juego = useGame(s => s.juego)!;
-  const total = (h: Peleador['peleas'][number]) => { const g = h.ganancia; return g ? g.bolsa + g.victoria + g.campeonato + g.finalizacion + g.noche : 0; };
+  const total = (h: Peleador['peleas'][number]) => { const g = h.ganancia; return g ? g.bolsa + g.victoria + g.campeonato + g.finalizacion + g.noche + (g.patrocinio ?? 0) : 0; };
+  const patrociniosTotal = p.peleas.reduce((a, h) => a + (h.ganancia?.patrocinio ?? 0), 0);
   const delAnio = p.peleas.filter(h => anio(h.semana) === anio(juego.semanaAbs)).reduce((a, h) => a + total(h), 0);
   return (
     <div className="stack">
@@ -327,7 +341,7 @@ function Ganancias({ p }: { p: Peleador }) {
         <div className="big accent" style={{ marginTop: 6 }}>{dinero(p.ganancias)}</div>
         <div className="kv" style={{ marginTop: 12 }}><span className="k">Año {anio(juego.semanaAbs)}</span><span className="v">{dinero(delAnio)}</span></div>
         <div className="kv"><span className="k">Bonos de la noche (acumulado)</span><span className="v">{dinero(p.rcd.bonosDinero)}</span></div>
-        <div className="kv"><span className="k">Patrocinios personales</span><span className="v">n/a · Fase 5</span></div>
+        <div className="kv"><span className="k">Patrocinios personales (acumulado)</span><span className="v">{dinero(patrociniosTotal)}</span></div>
       </div>
       {p.peleas.length === 0 ? <Vacio titulo="Sin pagos todavía" texto="El desglose pelea por pelea aparece cuando pelee en tus eventos." /> : (
         <div className="stack">
@@ -342,6 +356,7 @@ function Ganancias({ p }: { p: Peleador }) {
                   {h.ganancia.campeonato > 0 && <div className="kv"><span className="k">Bono de campeonato</span><span className="v">{dinero(h.ganancia.campeonato)}</span></div>}
                   {h.ganancia.finalizacion > 0 && <div className="kv"><span className="k">Bono por finalización</span><span className="v">{dinero(h.ganancia.finalizacion)}</span></div>}
                   {h.ganancia.noche > 0 && <div className="kv"><span className="k">Bonos de la noche</span><span className="v">{dinero(h.ganancia.noche)}</span></div>}
+                  {(h.ganancia.patrocinio ?? 0) > 0 && <div className="kv"><span className="k">Patrocinios personales</span><span className="v">{dinero(h.ganancia.patrocinio!)}</span></div>}
                 </>
               )}
             </div>

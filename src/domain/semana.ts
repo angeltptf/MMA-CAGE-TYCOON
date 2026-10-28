@@ -4,7 +4,9 @@ import { estrellasCalif, nombreCompleto } from './peleador';
 import { Rng, clamp } from './rng';
 import { recalcularRankings } from './rankings';
 import { pagarBonosPendientes } from './bonos';
+import { costoOperacion, ingresosAnuales, mover } from './finanzas';
 import { ptsDe } from './rankings';
+import { actualizarPatrocinios } from './patrociniosPersonales';
 import { generarOfertas } from './traspasos';
 import { generarProspectos } from './worldgen';
 import { agregarNoticia } from './noticias';
@@ -22,6 +24,8 @@ export function clonarJuego(j: Juego): Juego {
     eventos: j.eventos.map(e => ({ ...e, cartelera: e.cartelera.map(b => ({ ...b })) })),
     ofertas: j.ofertas.map(o => ({ ...o })),
     contadores: { ...j.contadores },
+    finanzas: j.finanzas.map(f => ({ ...f })),
+    cajaHist: j.cajaHist.slice(),
     torneos: j.torneos.map(t => ({ ...t, cupos: t.cupos.slice(), rondas: t.rondas.map(r => r.map(p => ({ ...p }))) })),
   };
 }
@@ -188,6 +192,9 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
     }
   }
 
+  // los peleadores populares consiguen patrocinios personales
+  actualizarPatrocinios(j, rng);
+
   // otras compañías ofrecen por mis peleadores (o pagan su cláusula)
   generarOfertas(j, rng);
 
@@ -195,15 +202,24 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
   if (j.semanaAbs % RANKING_RECALCULO_SEMANAS === 0) recalcularRankings(j);
   else if (cambioEstructura || afectadas.size) recalcularRankings(j, [...afectadas]);
 
-  // finanzas (la economía real llega en fases siguientes)
+  // finanzas: gastos de operación, ingresos anuales, historial de caja y alertas de quiebra
   const mia = j.companias.find(c => c.esMia)!;
+  mover(j, 'operacion', -costoOperacion(j));
+  mia.ingresosAnuales = ingresosAnuales(j);
+  j.cajaHist.push({ semana: j.semanaAbs, caja: mia.dinero });
+  if (j.cajaHist.length > 600) j.cajaHist.shift();
   if (mia.dinero < 0) {
     j.semanasEnNegativo++;
-    agregarNoticia(j, {
-      categoria: 'negocios', grupo: 'saldo-negativo',
-      titulo: 'Tu empresa está en números rojos',
-      cuerpo: 'Si el saldo sigue negativo varias semanas, será el fin de tu promotora.',
-    });
+    const resta = EMPRESA.gameOverSemanasNegativo - j.semanasEnNegativo;
+    if (j.semanasEnNegativo === 1 || j.semanasEnNegativo === 4 || (resta <= 2 && resta >= 0)) {
+      agregarNoticia(j, {
+        categoria: 'importante',
+        titulo: j.ajustes.gameOver
+          ? (resta > 0 ? `Números rojos: te quedan ${resta} semanas antes de la quiebra` : '¡Tu empresa quebró!')
+          : 'Tu empresa está en números rojos',
+        cuerpo: 'Organiza un evento rentable, vende peleadores (Más → Ofertas) o rescinde contratos caros para recuperar la caja.',
+      });
+    }
     if (j.ajustes.gameOver && j.semanasEnNegativo >= EMPRESA.gameOverSemanasNegativo) j.finDelJuego = true;
   } else j.semanasEnNegativo = 0;
 

@@ -141,7 +141,7 @@ export function estimarBoletos(j: Juego, e: Evento, precio = e.precio, hypeForza
   const { region, pop } = popRegionDe(j, sede);
   const hype = hypeForzado ?? hypeEvento(j, e);
   const potencial = d.base * Math.exp(d.k * pop);
-  const m = d.hypeMin + hype / d.hypeDivisor;
+  const m = d.hypeMin + Math.pow(hype / d.hypeDivisor, 1.3);
   // peleadores locales en el estelar o coestelar
   let locales = 0;
   for (const b of e.cartelera.slice(-2)) {

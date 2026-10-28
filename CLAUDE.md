@@ -20,6 +20,8 @@ Referencias visuales: `referencias/` (solo para entender funciones; no copiar no
 - Contratos negociables (bolsa, bonos, PPV, duración, cláusula, exclusividad): el peleador acepta, contraoferta o rechaza.
 - Otras compañías ofrecen por mis peleadores (aceptar / rechazar / contraofertar) o pagan su cláusula y se lo llevan.
 - Economía temprana: la transmisión digital es provisional hasta la Fase 5 (TV/PPV/patrocinios).
+- Todo movimiento de dinero pasa por `mover()` (src/domain/finanzas.ts), que alimenta el libro de finanzas.
+- Calibración: `src/domain/economia.test.ts` simula 3 años con un jugador automático. Referencia: Hardcore ~$50K → ~$270K, ingresos ~$400K/año a popularidad ~25. Si se toca la economía, revisar esos números.
 
 ## Estructura
 - `src/domain/` lógica pura y testeable (mundo, semana, rankings, acciones, listas). Sin React.

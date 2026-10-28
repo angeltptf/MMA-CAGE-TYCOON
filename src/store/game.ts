@@ -32,6 +32,7 @@ interface Estado {
   mutar: <T>(fn: (j: Juego) => T) => T;
   negociar: (id: number, oferta: Contrato, modo: ModoContrato) => RespuestaNegociacion;
   contraofertar: (ofertaId: number, monto: number) => { ok: boolean; mensaje: string };
+  continuarSinGameOver: () => void;
   actualizarAjustes: (a: Partial<Ajustes>) => void;
   editarEmpresa: (c: { nombre?: string; siglas?: string; color?: string; pais?: string }) => void;
   marcarRespaldo: () => void;
@@ -135,6 +136,11 @@ export const useGame = create<Estado>((set, get) => {
       const r = A.contraofertar(copia, ofertaId, monto);
       aplicar(copia);
       return r;
+    },
+    continuarSinGameOver: () => {
+      const j = get().juego;
+      if (!j) return;
+      aplicar({ ...j, finDelJuego: false, semanasEnNegativo: 0, ajustes: { ...j.ajustes, gameOver: false } });
     },
     actualizarAjustes: a => {
       const j = get().juego;

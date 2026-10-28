@@ -2,6 +2,7 @@
 // Si no pagan la cláusula de rescisión, yo decido si acepto, rechazo o contraoferto.
 import { TRASPASOS } from '../config/balance';
 import { dinero } from './format';
+import { mover } from './finanzas';
 import { agregarNoticia } from './noticias';
 import { contratoSugerido, nombreCompleto, scoreCalif } from './peleador';
 import { recalcularRankings } from './rankings';
@@ -14,8 +15,7 @@ export function programado(j: Juego, id: number): boolean {
 
 // Mueve al peleador a la compañía rival y cobra el traspaso
 function ejecutarTraspaso(j: Juego, p: Peleador, rival: Compania, monto: number, porClausula: boolean): void {
-  const mia = j.companias.find(c => c.esMia)!;
-  mia.dinero += monto;
+  mover(j, 'traspasos', monto);
   rival.dinero -= monto;
   const i = j.peleadores.findIndex(x => x.id === p.id);
   const nuevo = { ...p, companiaId: rival.id, enVenta: false, moral: clamp(p.moral + 8, 0, 100) };

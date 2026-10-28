@@ -1,6 +1,7 @@
 // Bonos de la noche: Peleador de la Noche, Pelea de la Noche y Actuación de la Noche.
 import { ECONOMIA } from '../config/economia';
 import { dinero } from './format';
+import { mover } from './finanzas';
 import { agregarNoticia } from './noticias';
 import { nombreCompleto } from './peleador';
 import type { BonosNoche, Evento, Juego, Pelea, Peleador } from './types';
@@ -72,7 +73,6 @@ export function pagarBonos(j: Juego, eventoId: number, sel: Pick<BonosNoche, 'pe
   if (sel.actuaciones.length > 2) return 'Máximo 2 actuaciones de la noche.';
   const montos = montosBonos(j, e, sel);
   const total = montos.reduce((a, x) => a + x.monto, 0);
-  const mia = j.companias.find(c => c.esMia)!;
   for (const m of montos) {
     const i = j.peleadores.findIndex(p => p.id === m.peleadorId);
     if (i < 0) continue;
@@ -86,7 +86,7 @@ export function pagarBonos(j: Juego, eventoId: number, sel: Pick<BonosNoche, 'pe
       : h));
     j.peleadores[i] = { ...p, rcd, peleas, ganancias: p.ganancias + m.monto, moral: Math.min(100, p.moral + 3), popularidad: Math.min(100, p.popularidad + (m.tipo === 'peleador' ? 1 : 0.5)) };
   }
-  mia.dinero -= total;
+  mover(j, 'bonos', -total);
   e.finanzas = { ...e.finanzas, bonosNoche: total, neto: e.finanzas.neto - total };
   e.bonos = { peleadorNoche: sel.peleadorNoche, peleaNoche: sel.peleaNoche, actuaciones: sel.actuaciones, pagado: true, total };
   const p1 = sel.peleadorNoche != null ? j.peleadores.find(p => p.id === sel.peleadorNoche) : undefined;

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { EMPRESA, REGION_LABEL } from '../config/balance';
 import { PAISES_SEDE, bandera, nombrePais } from '../config/paises';
 import { alcance, miEmpresa, popularidadEmpresa } from '../domain/empresa';
@@ -9,6 +10,7 @@ const COLORES = ['#c8f53c', '#38bdf8', '#ff6b9a', '#fbbf24', '#a78bfa', '#34d399
 
 export function Empresa() {
   const juego = useGame(s => s.juego)!;
+  const nav = useNavigate();
   const editar = useGame(s => s.editarEmpresa);
   const c = miEmpresa(juego);
   const mios = juego.peleadores.filter(p => p.companiaId === juego.miId && !p.retirado);
@@ -59,7 +61,8 @@ export function Empresa() {
 
           <div className="card">
             <h3>Finanzas y logros</h3>
-            <p className="muted small">Ingresos y gastos por semana y por año, con gráfica, llegan en las Fases 2 y 5. Los logros, en la Fase 7.</p>
+            <p className="muted small">Los logros llegan en la Fase 7. Patrocinios de la empresa y TV, en la Fase 5.</p>
+            <button className="btn" style={{ marginTop: 10 }} onClick={() => nav('/finanzas')}>Ver finanzas completas</button>
           </div>
         </div>
       </div>

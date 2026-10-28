@@ -70,7 +70,7 @@ export function Home() {
 
         <div className="stat-grid">
           <div className="stat"><div className="label">Fecha</div><div className="big" style={{ fontSize: 24 }}>{fecha(juego.semanaAbs)}</div></div>
-          <div className="stat"><div className="label">Caja</div><div className="big" style={{ color: mia.dinero < 0 ? 'var(--bad)' : 'var(--accent)' }}>{dinero(mia.dinero)}</div></div>
+          <button className="stat tap" style={{ textAlign: 'left' }} onClick={() => nav('/finanzas')}><div className="label">Caja</div><div className="big" style={{ color: mia.dinero < 0 ? 'var(--bad)' : 'var(--accent)' }}>{dinero(mia.dinero)}</div></button>
           <button className="stat tap" style={{ textAlign: 'left' }} onClick={() => nav('/peleadores')}>
             <div className="label">Peleadores</div>
             <div className="big">{mios.length}<span className="muted" style={{ fontSize: 20 }}> / {disp} disp.</span></div>

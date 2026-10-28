@@ -5,12 +5,14 @@ import { PROGRESION } from '../config/balance';
 import { sugerirBonos } from './bonos';
 import { resolverTitulo } from './campeonatos';
 import { dinero } from './format';
+import { mover } from './finanzas';
 import {
   costosEvento, estaCompleto, estimarBoletos, hypeBout, hypeEvento, momiosDe, popRegionDe, rankPos, sedeDe,
 } from './eventos';
 import { simularPelea } from './motor';
 import { agregarNoticia } from './noticias';
 import { nombreCompleto, recordTxt } from './peleador';
+import { pagoPorPelea } from './patrociniosPersonales';
 import { ptsDe, recalcularRankings } from './rankings';
 import { Rng, clamp } from './rng';
 import { avanzarGanador, etiquetaPartido, torneoDe } from './torneos';
@@ -97,7 +99,7 @@ function aplicar(
 
   // dinero
   const c = p.contrato;
-  const g = { bolsa: 0, victoria: 0, campeonato: 0, finalizacion: 0, noche: 0 };
+  const g = { bolsa: 0, victoria: 0, campeonato: 0, finalizacion: 0, noche: 0, patrocinio: pagoPorPelea(p) };
   if (c) {
     g.bolsa = c.bolsa;
     if (gano) {
@@ -107,6 +109,7 @@ function aplicar(
     }
   }
   const bonos = g.victoria + g.campeonato + g.finalizacion;
+  const patroc = g.patrocinio;
 
   const hist = {
     eventoId: e.id, eventoNombre: e.nombre, semana: e.semana, peleaId: b.id, clase: b.clase, genero: b.genero,
@@ -121,7 +124,7 @@ function aplicar(
     pago: { bolsa: g.bolsa, bonos },
     nuevo: {
       ...p, rec: { tot, mio }, finales, forma, racha, mejorRachaV, peorRachaD, fatiga, dano, fis, descansoHasta, lesion,
-      popularidad: clamp(pop, 0, 100), moral, ganancias: p.ganancias + g.bolsa + bonos, ultimoCombate: e.semana,
+      popularidad: clamp(pop, 0, 100), moral, ganancias: p.ganancias + g.bolsa + bonos + patroc, ultimoCombate: e.semana,
       rankPts, peleas: [hist, ...p.peleas].slice(0, 40), contrato,
     },
   };
@@ -223,7 +226,14 @@ export function realizarEvento(j: Juego, id: number): string | null {
   mia.popRegion = { ...mia.popRegion, [region]: clamp(pop + gana, 0, 100) };
   mia.fans += Math.round(vendidos * 0.8 + hype * 25);
   mia.reputacion = clamp(mia.reputacion + (neto >= 0 ? 0.3 : 0.1) + hype / 400, 0, 100);
-  mia.dinero += neto;
+  mover(j, 'taquilla', taquilla);
+  mover(j, 'transmision', costos.transmision);
+  mover(j, 'sedes', -costos.renta);
+  mover(j, 'produccion', -costos.produccion);
+  mover(j, 'viaje', -costos.viaje);
+  mover(j, 'bolsas', -Math.round(bolsas));
+  mover(j, 'bonos', -Math.round(bonosV));
+  mover(j, 'premios', -premios);
 
   e.estado = 'realizado';
   e.finanzas = {

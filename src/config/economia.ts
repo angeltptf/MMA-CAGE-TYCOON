@@ -4,18 +4,18 @@
 
 export const ECONOMIA = {
   // Renta de sede = porAsiento * aforo * (1 + aforo/escala) * factor del país
-  renta: { porAsiento: 0.75, escala: 12_000, recargoEstadio: 1.0 },
+  renta: { porAsiento: 3, escala: 12_000, recargoEstadio: 1.0 },
   // Popularidad requerida = max(0, (log10(aforo) - log0) * pendiente)
   sedes: { log0: 2.9, pendiente: 30 },
 
   // Demanda de boletos
   demanda: {
     // público potencial en la región = base * exp(k * popularidad regional)
-    base: 160,
-    k: 0.1,
+    base: 135,
+    k: 0.085,
     // el hype de la cartelera multiplica la demanda: min + hype/divisor
-    hypeMin: 0.45,
-    hypeDivisor: 60,
+    hypeMin: 0.25,
+    hypeDivisor: 50,
     // precio de referencia (con el que se vende el potencial) = ref * exp(k * calidad)
     precioRef: 9,
     precioK: 0.047,
@@ -31,7 +31,7 @@ export const ECONOMIA = {
   costos: {
     produccionBase: 300,
     produccionPorPelea: 150,
-    produccionPorAsiento: 0.1,
+    produccionPorAsiento: 1.0,
     recargoEstadio: 1.5,
     ppvRecargo: 1.4,            // un evento numerado cuesta más
     viajeBase: 4_000,
@@ -44,12 +44,15 @@ export const ECONOMIA = {
 
   // Popularidad que gana o pierde la empresa
   // ganancia = (base + lleno*porAforoLleno + hype*porHype) * (1 - popRegion/amortigua), máx. `tope`
-  popularidad: { base: 0.35, porAforoLleno: 1.4, porHype: 0.03, tope: 4, pierdeSiVacio: 0.5, amortigua: 110 },
+  popularidad: { base: 0.2, porAforoLleno: 0.6, porHype: 0.015, tope: 3, pierdeSiVacio: 0.3, amortigua: 100 },
 
   precio: { min: 1, max: 5000 },
   peleasMax: 20,
   peleasMin: 1,
   peleasInicial: 6,
+
+  // Operación semanal = (base + porPeleador * peleadores) * exp(k * popularidad de la empresa)
+  operacion: { base: 30, porPeleador: 12, k: 0.02 },
 
   // Bonos de la noche, como múltiplo de la bolsa de cada peleador (mínimo `min`)
   bonos: { peleador: 0.6, pelea: 0.4, actuacion: 0.3, min: 250 },

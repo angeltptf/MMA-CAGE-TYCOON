@@ -1,6 +1,7 @@
 // Negociación de contratos: el peleador valora lo que le ofreces y responde
 // aceptando, contraofertando o rechazando (y a veces ofendiéndose).
 import { CONTRATOS, NEGOCIACION } from '../config/balance';
+import { PATROCINIO_PERSONAL } from '../config/patrocinadores';
 import { clamp } from './rng';
 import { bolsaSugerida, clausulaDe, contratoSugerido } from './peleador';
 import type { Contrato, Juego, Peleador } from './types';
@@ -44,6 +45,10 @@ export function exigencia(j: Juego, p: Peleador): Exigencia {
   if (p.potencial >= 4 && p.edad <= 25) { ventajas.push('Gran prospecto'); m += 0.05; }
   const ofertas = j.ofertas.filter(o => o.peleadorId === p.id && o.estado === 'pendiente').length;
   if (ofertas) { ventajas.push(`Ofertas de otras compañías (${ofertas})`); m += Math.min(0.2, ofertas * 0.05); }
+  if (p.patrocinios.length) {
+    ventajas.push(`Patrocinadores personales (${p.patrocinios.length})`);
+    m += Math.min(PATROCINIO_PERSONAL.exigenciaMax, p.patrocinios.length * PATROCINIO_PERSONAL.exigenciaPorPatrocinio);
+  }
   if (p.enVenta) m -= 0.03;
   if (p.moral < 45) { ventajas.push('Descontento'); m += 0.08; }
   if (p.moral > 80) m -= 0.04;

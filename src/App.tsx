@@ -14,6 +14,8 @@ import { Sedes } from './screens/Sedes';
 import { Torneo, Torneos } from './screens/Torneos';
 import { Empresa } from './screens/Empresa';
 import { Ficha } from './screens/Ficha';
+import { Finanzas } from './screens/Finanzas';
+import { GameOver } from './screens/GameOver';
 import { Home } from './screens/Home';
 import { Landing } from './screens/Landing';
 import { Mas } from './screens/Mas';
@@ -76,6 +78,7 @@ export function App() {
             <Route path="/companias" element={<Companias />} />
             <Route path="/noticias" element={<Noticias />} />
             <Route path="/ofertas" element={<Ofertas />} />
+            <Route path="/finanzas" element={<Finanzas />} />
             <Route path="/empresa" element={<Empresa />} />
             <Route path="/ajustes" element={<Ajustes />} />
             <Route path="/torneos" element={<Torneos />} />
@@ -98,6 +101,7 @@ export function App() {
             ))}
           </nav>
         )}
+        {juego.finDelJuego && loc.pathname !== '/finanzas' && <GameOver />}
         {aviso && <Toast mensaje={aviso} error={/^No |Sin |Ese |Este |Esa /.test(aviso)} onFin={() => setAviso(null)} />}
       </div>
     </div>

@@ -1,6 +1,7 @@
 // Acciones del jugador sobre la partida. Todas operan sobre un juego ya clonado
 // (ver clonarJuego) y devuelven un mensaje de error, o null si salió bien.
 import { dinero } from './format';
+import { mover } from './finanzas';
 import {
   bonoFirma, clausulaDe, contratoSugerido, costoRescision, nombreCompleto,
 } from './peleador';
@@ -25,7 +26,7 @@ export function ficharLibre(j: Juego, id: number, peleas?: number): string | nul
   const costo = bonoFirma(contrato);
   const mia = miCompania(j);
   if (mia.dinero < costo) return `No te alcanza: el bono de firma es ${dinero(costo)}.`;
-  mia.dinero -= costo;
+  mover(j, 'fichajes', -costo);
   j.peleadores[i] = { ...p, companiaId: j.miId, contrato, moral: Math.min(100, p.moral + 5) };
   agregarNoticia(j, {
     categoria: 'peleadores', peleadorId: id,
@@ -49,7 +50,7 @@ export function robarPeleador(j: Juego, id: number): string | null {
   const total = p.contrato.clausula + bonoFirma(nuevo);
   const mia = miCompania(j);
   if (mia.dinero < total) return `No te alcanza: cláusula ${dinero(p.contrato.clausula)} + firma ${dinero(bonoFirma(nuevo))}.`;
-  mia.dinero -= total;
+  mover(j, 'fichajes', -total);
   rival.dinero += p.contrato.clausula;
   j.peleadores[i] = { ...p, companiaId: j.miId, contrato: nuevo, moral: Math.min(100, p.moral + 8) };
   agregarNoticia(j, {
@@ -72,7 +73,7 @@ export function rescindirContrato(j: Juego, id: number): string | null {
   const costo = costoRescision(p.contrato);
   const mia = miCompania(j);
   if (mia.dinero < costo) return `No te alcanza para la indemnización (${dinero(costo)}).`;
-  mia.dinero -= costo;
+  mover(j, 'indemnizaciones', -costo);
   j.peleadores[i] = { ...p, companiaId: null, contrato: null, moral: Math.max(0, p.moral - 10) };
   agregarNoticia(j, {
     categoria: 'peleadores', peleadorId: id,
@@ -155,7 +156,7 @@ export function firmarContrato(j: Juego, id: number, contrato: Contrato, modo: M
   const costo = Math.round(bonoFirma(contrato) * (modo === 'renovar' ? NEGOCIACION.bonoRenovacionPct : 1));
   const mia = miCompania(j);
   if (mia.dinero < costo) return `No te alcanza: el bono de ${modo === 'renovar' ? 'renovación' : 'firma'} es ${dinero(costo)}.`;
-  mia.dinero -= costo;
+  mover(j, 'fichajes', -costo);
   const nuevo: Contrato = { ...contrato, clausula: contrato.clausula || clausulaDe(contrato, p.edad) };
   j.peleadores[i] = {
     ...p, companiaId: j.miId, contrato: nuevo, moral: Math.min(100, p.moral + (modo === 'renovar' ? 3 : 5)), enVenta: false,
