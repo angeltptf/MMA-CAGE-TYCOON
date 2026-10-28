@@ -74,8 +74,15 @@ export interface Peleador {
   peleas: HistorialPelea[];   // últimas peleas (la más reciente primero)
   rankPts: number;            // puntos de ranking en mi empresa (suben y bajan con resultados)
   patrocinios: PatrocinioPersonal[];
+  popMax: number;             // popularidad máxima de su carrera
+  retiroSemana?: number;
+  salonAnio?: number;         // año en que entró al Salón de la Fama
+  anioStats: AnioStats;       // desempeño del año en curso (premios anuales)
+  ultimoRival?: number;       // para no repetir rival de inmediato (compañías rivales)
   rcd: RecordsPeleador;
 }
+
+export interface AnioStats { v: number; d: number; fin: number; tit: number; cal: number }
 
 export interface PatrocinioPersonal {
   marca: string;
@@ -95,6 +102,8 @@ export interface RecordsPeleador {
   peleaNoche: number;
   actuaciones: number;
   bonosDinero: number;
+  mejorReinoSemanas: number;
+  reinoInicio: number | null;
 }
 
 export interface HistorialPelea {
@@ -134,6 +143,9 @@ export interface Compania {
   eventosAnio: number;
   popRegion: Record<string, number>; // 0-100 por región
   fundada: number;            // semana absoluta
+  proxEvento: number;         // semana absoluta de su próximo evento (rivales)
+  nEventos: number;           // eventos organizados
+  hist: { semana: number; puntaje: number }[]; // para la gráfica de la ficha
 }
 
 export interface Division {
@@ -169,6 +181,28 @@ export interface Ajustes {
   velocidadSim: 1 | 2 | 3;
   nombresDivision: 'es' | 'en';
   recordatorioRespaldo: boolean;
+}
+
+// ---------- Mundo vivo ----------
+export interface EventoRival {
+  id: number;
+  companiaId: string;
+  nombre: string;
+  semana: number;
+  nPeleas: number;
+  estelar: { aId: number; bId: number; ganadorId: number | null; metodo: string; round: number; titulo: boolean };
+}
+
+export interface CandidatoPremio { score: number; aId: number; bId: number; ganadorId: number | null; texto: string; semana: number; companiaId: string; metodo: string }
+export interface CandidatosPremios { ko: CandidatoPremio[]; sub: CandidatoPremio[]; pelea: CandidatoPremio[]; regreso: { score: number; peleadorId: number; semanas: number; texto: string }[] }
+
+export interface PremioAnio {
+  anio: number;
+  categoria: 'peleador' | 'pelea' | 'ko' | 'sumision' | 'revelacion' | 'regreso';
+  peleadorId: number | null;
+  rivalId?: number;
+  texto: string;
+  companiaId: string | null;
 }
 
 export interface FilaFinanza { semana: number; cat: string; monto: number }
@@ -250,6 +284,10 @@ export interface Juego {
   divisiones: Division[];
   eventos: Evento[];
   negocios: Negocio[];
+  eventosRivales: EventoRival[];
+  rankCompPrev: Record<string, number>;
+  premios: PremioAnio[];
+  candidatosPremios: CandidatosPremios;
   sigNegocio: number;
   youtube: CanalYoutube;
   cooldownPropuestas: number; // semana desde la que se pueden pedir propuestas otra vez

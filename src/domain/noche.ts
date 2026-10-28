@@ -16,6 +16,7 @@ import { pagoPorPelea } from './patrociniosPersonales';
 import { ptsDe, recalcularRankings } from './rankings';
 import { Rng, clamp } from './rng';
 import { liquidarEvento, pagarReparto } from './negocios';
+import { anioVacio, registrarPelea, sumarAnio } from './premios';
 import { avanzarGanador, etiquetaPartido, torneoDe } from './torneos';
 import type {
   Evento, Instantanea, Juego, Pelea, Peleador, ResultadoPelea, Resultado, StatsPelea,
@@ -125,7 +126,7 @@ function aplicar(
     pago: { bolsa: g.bolsa, bonos },
     nuevo: {
       ...p, rec: { tot, mio }, finales, forma, racha, mejorRachaV, peorRachaD, fatiga, dano, fis, descansoHasta, lesion,
-      popularidad: clamp(pop, 0, 100), moral, ganancias: p.ganancias + g.bolsa + bonos + patroc, ultimoCombate: e.semana,
+      popularidad: clamp(pop, 0, 100), popMax: Math.max(p.popMax, clamp(pop, 0, 100)), moral, ganancias: p.ganancias + g.bolsa + bonos + patroc, ultimoCombate: e.semana,
       rankPts, peleas: [hist, ...p.peleas].slice(0, 40), contrato,
     },
   };
@@ -187,6 +188,8 @@ export function realizarEvento(j: Juego, id: number): string | null {
     const snapA = instantanea(j, a, ma);
     const snapB = instantanea(j, c, mb);
     b.hype = hypeBout(j, b);
+    const prevA = a.ultimoCombate;
+    const prevB = c.ultimoCombate;
     const res = simularPelea(a, c, b.rounds, rng);
     b.snap = { a: snapA, b: snapB };
     b.resultado = res;
@@ -194,6 +197,14 @@ export function realizarEvento(j: Juego, id: number): string | null {
     const rb = aplicar(e, b, c, a, res, false, rng, snapB, snapA, etiqueta);
     j.peleadores[ia] = ra.nuevo;
     j.peleadores[ib] = rb.nuevo;
+    registrarPelea(j, a, c, res, { titulo: b.titulo, semana: e.semana, companiaId: j.miId, prevA, prevB, ruido: rng.float(0, 1) });
+    {
+      const gA = res.ganadorId === a.id;
+      const gB = res.ganadorId === c.id;
+      const fin = ['KO', 'TKO', 'SUB'].includes(res.metodo);
+      j.peleadores[ia] = { ...j.peleadores[ia], anioStats: sumarAnio(j.peleadores[ia].anioStats ?? anioVacio(), gA, gB, gA && fin, b.titulo, ptsDe(c)) };
+      j.peleadores[ib] = { ...j.peleadores[ib], anioStats: sumarAnio(j.peleadores[ib].anioStats ?? anioVacio(), gB, gA, gB && fin, b.titulo, ptsDe(a)) };
+    }
     bolsas += ra.pago.bolsa + rb.pago.bolsa;
     bonosV += ra.pago.bonos + rb.pago.bonos;
 

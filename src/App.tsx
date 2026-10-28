@@ -22,8 +22,10 @@ import { Landing } from './screens/Landing';
 import { Mas } from './screens/Mas';
 import { Noticias } from './screens/Noticias';
 import { Ofertas } from './screens/Ofertas';
-import { Proximamente } from './screens/Proximamente';
+import { Premios } from './screens/Premios';
 import { Rankings } from './screens/Rankings';
+import { Registros } from './screens/Registros';
+import { Salon } from './screens/Salon';
 import { Roster } from './screens/Roster';
 import { useGame } from './store/game';
 import { Icon, type IconName } from './ui/Icon';
@@ -84,9 +86,9 @@ export function App() {
             <Route path="/ajustes" element={<Ajustes />} />
             <Route path="/torneos" element={<Torneos />} />
             <Route path="/torneo/:id" element={<Torneo />} />
-            <Route path="/registros" element={<Proximamente titulo="Registros" fase="Fase 6" texto="Récords históricos de tu empresa." />} />
-            <Route path="/salon" element={<Proximamente titulo="Salón de la Fama" fase="Fase 6" texto="Los peleadores retirados más destacados." />} />
-            <Route path="/premios" element={<Proximamente titulo="Premios anuales" fase="Fase 6" texto="Peleador, Pelea, KO y Sumisión del Año." />} />
+            <Route path="/registros" element={<Registros />} />
+            <Route path="/salon" element={<Salon />} />
+            <Route path="/premios" element={<Premios />} />
             <Route path="*" element={<Home />} />
           </Routes>
         </div>

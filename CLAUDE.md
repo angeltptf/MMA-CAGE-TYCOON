@@ -20,6 +20,7 @@ Referencias visuales: `referencias/` (solo para entender funciones; no copiar no
 - Contratos negociables (bolsa, bonos, PPV, duración, cláusula, exclusividad): el peleador acepta, contraoferta o rechaza.
 - Otras compañías ofrecen por mis peleadores (aceptar / rechazar / contraofertar) o pagan su cláusula y se lo llevan.
 - Economía temprana: la transmisión digital es provisional hasta la Fase 5 (TV/PPV/patrocinios).
+- Mundo vivo (Fase 6): las rivales organizan eventos cada semana con el motor rápido (`src/domain/rivales.ts`), renuevan o sueltan contratos, firman agentes libres y recalculan estrellas cada trimestre. Hay premios anuales mundiales y ceremonia del Salón de la Fama en la semana 46. Parámetros en `src/config/mundo.ts`.
 - Todo ingreso externo llega por CONTRATOS (decisión del dueño): patrocinadores, cadenas/plataformas de TV e inversionistas mandan ofertas de 1 a 5 años que se aceptan, contraofertan o rechazan. YouTube es un canal propio siempre abierto. Ver `src/domain/negocios.ts` y `src/config/negocios.ts`.
 - Todo movimiento de dinero pasa por `mover()` (src/domain/finanzas.ts), que alimenta el libro de finanzas.
 - Calibración: `src/domain/economia.test.ts` simula 3 años con un jugador automático. Referencia: Hardcore ~$50K → ~$270K, ingresos ~$400K/año a popularidad ~25. Si se toca la economía, revisar esos números.

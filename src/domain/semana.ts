@@ -7,6 +7,10 @@ import { pagarBonosPendientes } from './bonos';
 import { costoOperacion, ingresosAnuales, mover } from './finanzas';
 import { ptsDe } from './rankings';
 import { procesarNegociosSemana, perks } from './negocios';
+import { entregarPremios } from './premios';
+import { simularRivales } from './rivales';
+import { ceremoniaSalon, podarRetirados } from './salon';
+import { MUNDO } from '../config/mundo';
 import { actualizarPatrocinios } from './patrociniosPersonales';
 import { generarOfertas } from './traspasos';
 import { generarProspectos } from './worldgen';
@@ -28,6 +32,10 @@ export function clonarJuego(j: Juego): Juego {
     finanzas: j.finanzas.map(f => ({ ...f })),
     negocios: j.negocios.map(n => ({ ...n, objetivos: n.objetivos.map(o => ({ ...o })), inv: n.inv ? { ...n.inv, condiciones: n.inv.condiciones.slice(), eventoIds: n.inv.eventoIds.slice() } : undefined })),
     youtube: { ...j.youtube },
+    eventosRivales: j.eventosRivales.slice(),
+    rankCompPrev: { ...j.rankCompPrev },
+    premios: j.premios.slice(),
+    candidatosPremios: { ko: j.candidatosPremios.ko.slice(), sub: j.candidatosPremios.sub.slice(), pelea: j.candidatosPremios.pelea.slice(), regreso: j.candidatosPremios.regreso.slice() },
     cajaHist: j.cajaHist.slice(),
     torneos: j.torneos.map(t => ({ ...t, cupos: t.cupos.slice(), rondas: t.rondas.map(r => r.map(p => ({ ...p }))) })),
   };
@@ -146,6 +154,7 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
       }
       if (retira) {
         cambios.retirado = true;
+        cambios.retiroSemana = j.semanaAbs;
         resumen.retiros++;
         if (p.companiaId) afectadas.add(p.companiaId);
         const notable = p.popularidad >= 45 || mio;
@@ -201,6 +210,13 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
 
   // contratos de patrocinio, televisión e inversionistas: pagos, objetivos y ofertas nuevas
   procesarNegociosSemana(j, rng);
+
+  // las compañías rivales organizan eventos, pelean, renuevan y firman
+  simularRivales(j, rng);
+
+  // fin de año: premios anuales y limpieza; ceremonia del Salón de la Fama
+  if (semAnio === 1 && j.semanaAbs > 1) { entregarPremios(j, Math.floor(j.semanaAbs / 52)); podarRetirados(j); }
+  if (semAnio === MUNDO.salon.semanaCeremonia) ceremoniaSalon(j);
 
   // otras compañías ofrecen por mis peleadores (o pagan su cláusula)
   generarOfertas(j, rng);

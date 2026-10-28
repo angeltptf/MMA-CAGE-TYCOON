@@ -11,7 +11,9 @@ import {
 } from './peleador';
 import { Rng, clamp } from './rng';
 import { YOUTUBE } from '../config/negocios';
+import { puntajesCompanias, tierPorPuntaje } from './empresa';
 import { ofertasIniciales } from './negocios';
+import { inicializarRivales } from './rivales';
 import { rcdVacio } from './migracion';
 import { regionDePais } from './regiones';
 export { regionDePais } from './regiones';
@@ -178,7 +180,7 @@ export function crearPeleador(
     forma: [], racha: { tipo: 'V', n: 0 }, mejorRachaV: 0, peorRachaD: 0,
     ganancias: 0, ultimoCombate: null, favorito: false, retirado: false, elite: false,
     enVenta: false, sinNegociarHasta: 0, descansoHasta: 0, peleas: [],
-    rankPts: 0, rcd: rcdVacio(), patrocinios: [],
+    rankPts: 0, rcd: rcdVacio(), patrocinios: [], popMax: 0, anioStats: { v: 0, d: 0, fin: 0, tit: 0, cal: 0 },
   };
 
   const calif = estrellasCalif(p) * 2;
@@ -205,6 +207,7 @@ export function crearPeleador(
   );
   if (edad <= 22 && peleas < 6) p.popularidad = Math.min(p.popularidad, 18);
   if (op.popMax != null) p.popularidad = Math.min(p.popularidad, op.popMax);
+  p.popMax = p.popularidad;
   p.dano = clamp(Math.round(Math.max(0, (peleas - 8) * 0.35 + (edad - 28) * 0.5 + rng.normal(0, 3))), 0, 60);
   p.fatiga = 0;
   p.ultimoCombate = null;
@@ -224,7 +227,7 @@ function cfgACompania(c: CompaniaCfg): Compania {
     id: c.id, nombre: c.nombre, siglas: c.siglas, color: c.color, pais: c.pais, esMia: false,
     tier: c.tier, dinero: c.dinero, fans: c.fans, reputacion: c.reputacion,
     ingresosAnuales: c.ingresosAnuales, eventosAnio: c.eventosAnio,
-    popRegion: regionBase, fundada: -52 * 15,
+    popRegion: regionBase, fundada: -52 * 15, proxEvento: 1, nEventos: 0, hist: [],
   };
 }
 
@@ -242,7 +245,7 @@ export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Jue
     id: miId, nombre: nueva.nombre, siglas: nueva.siglas, color: nueva.color, pais: nueva.pais,
     esMia: true, tier: 1, dinero: DIFICULTAD[nueva.dificultad].dineroInicial,
     fans: EMPRESA.fansIniciales, reputacion: EMPRESA.reputacionInicial, ingresosAnuales: 0,
-    eventosAnio: 0, popRegion, fundada: 0,
+    eventosAnio: 0, popRegion, fundada: 0, proxEvento: 0, nEventos: 0, hist: [],
   };
   const companias: Compania[] = [mia, ...COMPANIAS_RIVALES.map(cfgACompania)];
 
@@ -288,7 +291,7 @@ export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Jue
     version: 1, nombre: nueva.nombre, dificultad: nueva.dificultad, miId,
     semanaAbs: 0, rngState: rng.state, sigId: id, sigNoticia: 1,
     companias, peleadores, divisiones, eventos: [], ofertas: [], sigEvento: 1, sigPelea: 1, sigOferta: 1,
-    contadores: { ppv: 0, noche: 0 }, torneos: [], finanzas: [], cajaHist: [], negocios: [], sigNegocio: 1, cooldownPropuestas: 0, youtube: { subs: YOUTUBE.subsIniciales, vistas: 0, ingresos: 0, virales: 0 }, sigTorneo: 1, poblacionObjetivo: id - 1, noticias: [],
+    contadores: { ppv: 0, noche: 0 }, torneos: [], finanzas: [], cajaHist: [], eventosRivales: [], rankCompPrev: {}, premios: [], candidatosPremios: { ko: [], sub: [], pelea: [], regreso: [] }, negocios: [], sigNegocio: 1, cooldownPropuestas: 0, youtube: { subs: YOUTUBE.subsIniciales, vistas: 0, ingresos: 0, virales: 0 }, sigTorneo: 1, poblacionObjetivo: id - 1, noticias: [],
     ajustes: {
       unidades: 'metrico', gameOver: true, velocidadSim: 2, nombresDivision: 'es',
       recordatorioRespaldo: true,
@@ -297,6 +300,10 @@ export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Jue
   };
   recalcularRankings(j, undefined, true);
   ofertasIniciales(j, rng);
+  inicializarRivales(j, rng);
+  const pts = puntajesCompanias(j);
+  j.rankCompPrev = Object.fromEntries(j.companias.slice().sort((a, b) => (pts.get(b.id) ?? 0) - (pts.get(a.id) ?? 0)).map((c, i) => [c.id, i + 1]));
+  for (const c of j.companias) { c.tier = tierPorPuntaje(pts.get(c.id) ?? 0); c.hist.push({ semana: 0, puntaje: Math.round((pts.get(c.id) ?? 0) * 10) / 10 }); }
   j.rngState = rng.state;
   j.noticias.push({
     id: j.sigNoticia++, semana: 0, categoria: 'importante', leida: false,
@@ -329,6 +336,7 @@ export function generarProspectos(j: Juego, rng: Rng, n: number): Peleador[] {
     for (let k = 0; k < p.rec.tot.v + p.rec.tot.d; k++) p.forma.push(k < p.rec.tot.v ? 'V' : 'D');
     p.forma = p.forma.slice(-5);
     p.popularidad = clamp(Math.round(rng.normal(8, 4)), 1, 20);
+    p.popMax = p.popularidad;
     if (cfg) {
       p.contrato = contratoSugerido(p, rng.int(3, 8));
     }

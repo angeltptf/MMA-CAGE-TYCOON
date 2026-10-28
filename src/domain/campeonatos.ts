@@ -25,19 +25,21 @@ export function registrarDefensa(j: Juego, campeonId: number): void {
 // Alguien se queda con el título (nuevo reinado)
 export function otorgarTitulo(j: Juego, div: Division, ganadorId: number, e: Evento, motivo: string): void {
   const anterior = div.campeonId;
-  if (anterior != null && anterior !== ganadorId) reemplazar(j, anterior, p => ({ ...p, rcd: { ...p.rcd, defensasConsec: 0 } }));
+  if (anterior != null && anterior !== ganadorId) {
+    reemplazar(j, anterior, p => ({ ...p, rcd: { ...p.rcd, defensasConsec: 0, mejorReinoSemanas: Math.max(p.rcd.mejorReinoSemanas, p.rcd.reinoInicio != null ? j.semanaAbs - p.rcd.reinoInicio : 0), reinoInicio: null } }));
+  }
   div.campeonId = ganadorId;
   if (div.interinoId === ganadorId) div.interinoId = null;
   const g = reemplazar(j, ganadorId, p => ({
     ...p, rcd: {
-      ...p.rcd, reinados: p.rcd.reinados + 1, defensasConsec: 0,
+      ...p.rcd, reinados: p.rcd.reinados + 1, defensasConsec: 0, reinoInicio: j.semanaAbs,
       edadPrimerTitulo: p.rcd.edadPrimerTitulo ?? p.edad, edadUltimoTitulo: p.edad,
     },
   }));
   if (g) {
     agregarNoticia(j, {
-      categoria: 'importante', peleadorId: g.id,
-      titulo: `¡Nuevo campeón ${nombreClase(div.clase, j.ajustes.nombresDivision)}${div.genero === 'F' ? ' (femenil)' : ''}: ${nombreCompleto(g)}!`,
+      categoria: div.companiaId === j.miId ? 'importante' : 'mundo', peleadorId: g.id,
+      titulo: `¡Nuevo campeón ${nombreClase(div.clase, j.ajustes.nombresDivision)}${div.genero === 'F' ? ' (femenil)' : ''}${div.companiaId === j.miId ? '' : ` de ${j.companias.find(c => c.id === div.companiaId)?.nombre ?? ''}`}: ${nombreCompleto(g)}!`,
       cuerpo: `${motivo} en ${e.nombre}.`,
     });
   }

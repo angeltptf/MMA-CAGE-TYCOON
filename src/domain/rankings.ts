@@ -31,7 +31,7 @@ export function recalcularRankings(j: Juego, companiaIds?: string[], inicial = f
   const esMiaDiv = (d: { companiaId: string }) => d.companiaId === j.miId;
   for (const d of j.divisiones) {
     if (companiaIds && !companiaIds.includes(d.companiaId)) continue;
-    const valor = (p: Peleador) => (esMiaDiv(d) ? ptsDe(p) : puntajeRanking(p));
+    const valor = (p: Peleador) => ptsDe(p);
     const lista = (grupos.get(d.id) ?? []).slice().sort((a, b) => valor(b) - valor(a));
     const esMia = esMiaDiv(d);
     const campActual = d.campeonId != null ? porId.get(d.campeonId) : undefined;

@@ -13,7 +13,7 @@ La especificación completa está en [`ESPECIFICACION_JUEGO_MMA.md`](ESPECIFICAC
 | 3 | Resultados, bonos de la noche, rankings por resultados, campeonatos, historial y récords, torneos | ✅ |
 | 4 | Contratos, ganancias, patrocinios personales, libro de finanzas, Game Over, economía calibrada | ✅ |
 | 5 | Negocios por contratos: patrocinios, TV (YouTube, streaming, cable, PPV…), inversionistas | ✅ |
-| 6 | Compañías rivales vivas, noticias, salón de la fama, premios | ⬜ |
+| 6 | Compañías rivales vivas, ranking de compañías, mercado compartido, Salón de la Fama, premios y registros | ✅ |
 | 7 | Extras, pulido, balance final | ⬜ |
 
 ## Desarrollo

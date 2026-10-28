@@ -89,7 +89,7 @@ export function retirarPeleador(j: Juego, id: number): string | null {
   const p = j.peleadores[i];
   if (!p) return 'Peleador no encontrado.';
   const cid = p.companiaId;
-  j.peleadores[i] = { ...p, retirado: true, companiaId: null, contrato: null };
+  j.peleadores[i] = { ...p, retirado: true, companiaId: null, contrato: null, retiroSemana: j.semanaAbs };
   agregarNoticia(j, {
     categoria: cid === j.miId ? 'importante' : 'mundo', peleadorId: id,
     titulo: `${nombreCompleto(p)} se retira`,

@@ -18,9 +18,9 @@ export function Mas() {
         <Fila icono="building" titulo="Empresa" detalle="Nombre, siglas, color y resumen" onClick={() => nav('/empresa')} />
         <Fila icono="edit" titulo="Editor de peleadores" detalle="Crea o modifica peleadores" onClick={() => nav('/editor/nuevo')} />
         <Fila icono="trophy" titulo="Torneos" detalle="Llaves de 4, 8 o 16 peleadores" onClick={() => nav('/torneos')} />
-        <Fila icono="award" titulo="Registros" detalle="Próximamente · Fase 6" onClick={() => nav('/registros')} bloqueado />
-        <Fila icono="star" titulo="Salón de la Fama" detalle="Próximamente · Fase 6" onClick={() => nav('/salon')} bloqueado />
-        <Fila icono="award" titulo="Premios anuales" detalle="Próximamente · Fase 6" onClick={() => nav('/premios')} bloqueado />
+        <Fila icono="award" titulo="Registros" detalle="Récords históricos de tu empresa" onClick={() => nav('/registros')} />
+        <Fila icono="star" titulo="Salón de la Fama" detalle="Los retirados más destacados" onClick={() => nav('/salon')} />
+        <Fila icono="award" titulo="Premios anuales" detalle="Peleador, Pelea, KO y Sumisión del Año" onClick={() => nav('/premios')} />
         <Fila icono="settings" titulo="Ajustes" detalle="Unidades, respaldo y partidas" onClick={() => nav('/ajustes')} />
         <div style={{ padding: 16 }}>
           <button className="btn" onClick={() => salir()}>Cambiar de partida</button>

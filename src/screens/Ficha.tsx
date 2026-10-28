@@ -70,6 +70,8 @@ function Info({ p, rank }: { p: Peleador; rank?: { rank: number; campeon: boolea
         <div className="grow stack" style={{ gap: 4 }}>
           <div className="row wrap" style={{ gap: 6 }}>
             <Pill tipo="accent">{estatus(p)}</Pill>
+            {p.retirado && <Pill tipo="warn">Retirado</Pill>}
+            {p.salonAnio && <Pill tipo="ok">Salón de la Fama {p.salonAnio}</Pill>}
             <Pill>{nombreClase(p.clase, juego.ajustes.nombresDivision)}</Pill>
             {p.lesion && <Pill tipo="bad">Lesionado</Pill>}
           </div>
