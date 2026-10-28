@@ -10,6 +10,7 @@ export function Mas() {
       <TopBar titulo="Más" atras={false} />
       <div className="scroll flush">
         <Fila icono="news" titulo="Noticias" detalle="Avisos, ofertas y novedades" onClick={() => nav('/noticias')} />
+        <Fila icono="bolt" titulo="Ofertas por mis peleadores" detalle="Traspasos y contraofertas" onClick={() => nav('/ofertas')} />
         <Fila icono="trophy" titulo="Divisiones" detalle="Crea y administra tus divisiones" onClick={() => nav('/divisiones')} />
         <Fila icono="chart" titulo="Rankings" detalle="Por compañía, global y libra por libra" onClick={() => nav('/rankings')} />
         <Fila icono="building" titulo="Ranking de compañías" detalle="Tú contra UFC, ONE, PFL y más" onClick={() => nav('/companias')} />

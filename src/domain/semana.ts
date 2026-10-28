@@ -3,8 +3,10 @@ import { nombrePais } from '../config/paises';
 import { estrellasCalif, nombreCompleto } from './peleador';
 import { Rng, clamp } from './rng';
 import { recalcularRankings } from './rankings';
+import { generarOfertas } from './traspasos';
 import { generarProspectos } from './worldgen';
-import type { CategoriaNoticia, Disciplina, Juego, Noticia, Peleador } from './types';
+import { agregarNoticia } from './noticias';
+import type { Disciplina, Juego, Peleador } from './types';
 import { semanaDelAnio } from './format';
 
 export function clonarJuego(j: Juego): Juego {
@@ -15,31 +17,13 @@ export function clonarJuego(j: Juego): Juego {
     divisiones: j.divisiones.map(d => ({ ...d, ranking: d.ranking.slice() })),
     noticias: j.noticias.slice(),
     ajustes: { ...j.ajustes },
+    eventos: j.eventos.map(e => ({ ...e, cartelera: e.cartelera.map(b => ({ ...b })) })),
+    ofertas: j.ofertas.map(o => ({ ...o })),
+    contadores: { ...j.contadores },
   };
 }
 
-interface NuevaNoticia {
-  categoria: CategoriaNoticia;
-  titulo: string;
-  cuerpo?: string;
-  grupo?: string;
-  peleadorId?: number;
-}
-
-// Agrupa avisos repetidos: si ya hay uno sin leer con el mismo grupo, solo sube el contador.
-export function agregarNoticia(j: Juego, n: NuevaNoticia): void {
-  if (n.grupo) {
-    const i = j.noticias.findIndex(x => x.grupo === n.grupo && !x.leida);
-    if (i >= 0) {
-      const x = j.noticias[i];
-      j.noticias[i] = { ...x, semana: j.semanaAbs, veces: (x.veces ?? 1) + 1 };
-      return;
-    }
-  }
-  const nueva: Noticia = { id: j.sigNoticia++, semana: j.semanaAbs, leida: false, ...n };
-  j.noticias.unshift(nueva);
-  if (j.noticias.length > 400) j.noticias.length = 400;
-}
+export { agregarNoticia } from './noticias';
 
 const DISC: Disciplina[] = ['bjj', 'boxeo', 'muayThai', 'lucha'];
 
@@ -169,7 +153,7 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
 
   // nuevo talento: se cubre una fracción del déficit respecto a la población objetivo
   const activos = j.peleadores.reduce((n, p) => n + (p.retirado ? 0 : 1), 0);
-  const deficit = Math.max(0, CICLO_VIDA.poblacionObjetivo - activos);
+  const deficit = Math.max(0, actual.poblacionObjetivo - activos);
   const n = clamp(Math.floor(deficit * CICLO_VIDA.controlDeficit + rng.float(0, 1.2)), 0, CICLO_VIDA.maxNuevosPorSemana);
   if (n > 0) {
     const nuevos = generarProspectos(j, rng, n);
@@ -186,6 +170,9 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
     }
     resumen.nuevos = n;
   }
+
+  // otras compañías ofrecen por mis peleadores (o pagan su cláusula)
+  generarOfertas(j, rng);
 
   // rankings: al instante si hubo bajas/altas, y cada cierto número de semanas en general
   if (j.semanaAbs % RANKING_RECALCULO_SEMANAS === 0) recalcularRankings(j);

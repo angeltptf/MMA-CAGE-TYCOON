@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CONTRATOS } from '../config/balance';
 import { ATRIBUTO_LABEL, ATRIBUTOS_FIS, DISCIPLINAS, DISCIPLINA_LABEL, ESTILOS } from '../config/divisiones';
 import { nombrePais } from '../config/paises';
 import { abrevClase, altura, anio, dinero, nombreClase, peso, semanaDelAnio } from '../domain/format';
@@ -8,12 +7,14 @@ import {
   bonoFirma, contratoSugerido, costoRescision, disponible, estatus, estrellasCalif, nombreCompleto,
   recordTxt, totalPeleas,
 } from '../domain/peleador';
+import { exigencia } from '../domain/negociacion';
 import { mapaRankings } from '../domain/rankings';
 import type { Peleador } from '../domain/types';
 import { acciones, miCompania, useGame } from '../store/game';
 import { Avatar } from '../ui/Avatar';
+import { NegociarSheet } from './NegociarSheet';
 import { Icon } from '../ui/Icon';
-import { BarraValor, Bar, Confirmar, Estrellas, Forma, Pill, Stepper, Tabs, TopBar, Vacio } from '../ui/kit';
+import { BarraValor, Bar, Confirmar, Estrellas, Forma, Pill, Tabs, TopBar, Vacio } from '../ui/kit';
 
 type TabId = 'info' | 'contrato' | 'historial' | 'records' | 'ganancias';
 
@@ -135,33 +136,19 @@ function Info({ p, rank }: { p: Peleador; rank?: { rank: number; campeon: boolea
   );
 }
 
-function ventajas(p: Peleador, esCampeon: boolean): string[] {
-  const v: string[] = [];
-  if (esCampeon) v.push('Campeón');
-  if (p.popularidad >= 60) v.push('Muy popular');
-  else if (p.popularidad >= 40) v.push('Popular');
-  if (p.racha.tipo === 'V' && p.racha.n >= 3) v.push(`Racha de ${p.racha.n} victorias`);
-  if (p.potencial >= 4 && p.edad <= 24) v.push('Gran prospecto');
-  if (p.companiaId) v.push('Ofertas de otras compañías');
-  return v;
-}
-
 function ContratoTab({ p }: { p: Peleador }) {
   const juego = useGame(s => s.juego)!;
   const nav = useNavigate();
   const mia = miCompania(juego);
-  const [peleas, setPeleas] = useState(CONTRATOS.peleasDefault);
   const [conf, setConf] = useState<null | 'rescindir' | 'retirar' | 'robar'>(null);
+  const [negociando, setNegociando] = useState<null | 'fichar' | 'renovar'>(null);
   const [error, setError] = useState<string | null>(null);
-  const oferta = useMemo(() => contratoSugerido(p, peleas), [p, peleas]);
-  const esCampeon = juego.divisiones.some(d => d.campeonId === p.id);
   const mio = p.companiaId === juego.miId;
   const rival = p.companiaId && !mio ? juego.companias.find(c => c.id === p.companiaId) : undefined;
   const c = p.contrato;
-  const avgBolsa = useMemo(() => {
-    const m = juego.peleadores.filter(x => x.companiaId === juego.miId && x.contrato && !x.retirado);
-    return m.length ? m.reduce((a, x) => a + x.contrato!.bolsa, 0) / m.length : 0;
-  }, [juego.peleadores, juego.miId]);
+  const ex = useMemo(() => exigencia(juego, p), [juego, p]);
+  const ofertas = juego.ofertas.filter(o => o.peleadorId === p.id && o.estado === 'pendiente');
+  const bloqueado = p.sinNegociarHasta > juego.semanaAbs;
 
   const ejecutar = (fn: () => string | null) => {
     const e = fn();
@@ -180,38 +167,30 @@ function ContratoTab({ p }: { p: Peleador }) {
           <div className="kv"><span className="k">Bolsa</span><span className="v">{dinero(c.bolsa)}</span></div>
           <div className="kv"><span className="k">Bono por victoria</span><span className="v">{dinero(c.bonoVictoria)}</span></div>
           <div className="kv"><span className="k">Bono de campeonato</span><span className="v">{dinero(c.bonoCampeonato)}</span></div>
+          {c.bonoFinalizacion > 0 && <div className="kv"><span className="k">Bono por KO / sumisión</span><span className="v">{dinero(c.bonoFinalizacion)}</span></div>}
+          {c.bonoNoche > 0 && <div className="kv"><span className="k">Bono pelea de la noche</span><span className="v">{dinero(c.bonoNoche)}</span></div>}
           <div className="kv"><span className="k">Puntos de PPV</span><span className="v">{c.puntosPPV ? `${c.puntosPPV}%` : 'n/a'}</span></div>
+          <div className="kv"><span className="k">Exclusividad</span><span className="v">{c.exclusividad ? 'Sí' : 'No'}</span></div>
           <div className="kv"><span className="k">Cláusula de rescisión</span><span className="v accent">{dinero(c.clausula)}</span></div>
         </div>
       )}
 
       {!p.companiaId && !p.retirado && (
         <div className="card">
-          <h3>Oferta de firma</h3>
-          <div className="row between" style={{ marginBottom: 6 }}>
-            <span className="muted">Duración (peleas)</span>
-            <Stepper valor={peleas} min={CONTRATOS.peleasMin} max={CONTRATOS.peleasMax} onChange={setPeleas} />
-          </div>
-          <div className="kv"><span className="k">Bolsa</span><span className="v">{dinero(oferta.bolsa)}</span></div>
-          <div className="kv"><span className="k">Bono por victoria</span><span className="v">{dinero(oferta.bonoVictoria)}</span></div>
-          <div className="kv"><span className="k">Bono de campeonato</span><span className="v">{dinero(oferta.bonoCampeonato)}</span></div>
-          <div className="kv"><span className="k">Puntos de PPV</span><span className="v">{oferta.puntosPPV ? `${oferta.puntosPPV}%` : 'n/a'}</span></div>
-          <div className="kv"><span className="k">Cláusula de rescisión</span><span className="v">{dinero(oferta.clausula)}</span></div>
-          <div className="kv"><span className="k">Bono de firma (hoy)</span><span className="v accent">{dinero(bonoFirma(oferta))}</span></div>
-          <p className="muted small" style={{ marginTop: 10 }}>
-            Ventajas: {ventajas(p, esCampeon).join(', ') || 'ninguna'}. Saldo: {dinero(mia.dinero)} · Bolsa promedio de tu roster: {avgBolsa ? dinero(avgBolsa) : 'n/a'}.
-          </p>
-          <p className="muted small" style={{ marginTop: 6 }}>La negociación completa (contraofertas y cláusulas) llega en la Fase 4; por ahora acepta las condiciones que pide.</p>
-          <button className="btn primary" style={{ marginTop: 12 }} onClick={() => ejecutar(() => acciones.fichar(p.id, peleas))}>
-            Fichar · {dinero(bonoFirma(oferta))}
-          </button>
+          <h3>Agente libre</h3>
+          <p className="muted small">Negocia bolsa, bonos, duración y cláusula. Él puede aceptar, contraofertar o rechazar según su moral, su popularidad y su edad.</p>
+          <div className="kv"><span className="k">Pide aprox.</span><span className="v">{dinero(ex.pide.bolsa)} + {dinero(ex.pide.bonoVictoria)} si gana</span></div>
+          <div className="kv"><span className="k">Ventajas</span><span className="v">{ex.ventajas.join(', ') || 'ninguna'}</span></div>
+          <div className="kv"><span className="k">Tu saldo</span><span className="v">{dinero(mia.dinero)}</span></div>
+          {bloqueado && <p className="muted small" style={{ marginTop: 8 }}>Se ofendió con tu última oferta: no negocia por {p.sinNegociarHasta - juego.semanaAbs} semanas.</p>}
+          <button className="btn primary" style={{ marginTop: 12 }} disabled={bloqueado} onClick={() => setNegociando('fichar')}>Negociar contrato</button>
         </div>
       )}
 
       {rival && c && (
         <div className="card">
           <h3>Fichar desde {rival.nombre}</h3>
-          <p className="muted small">Pagando su cláusula de rescisión puedes llevártelo sin negociar con su compañía.</p>
+          <p className="muted small">Pagando su cláusula de rescisión te lo llevas sin negociar con su compañía. Después firma las condiciones normales.</p>
           <div className="kv"><span className="k">Cláusula</span><span className="v">{dinero(c.clausula)}</span></div>
           <div className="kv"><span className="k">Bono de firma</span><span className="v">{dinero(bonoFirma(contratoSugerido(p)))}</span></div>
           <div className="kv"><span className="k">Total</span><span className="v accent">{dinero(c.clausula + bonoFirma(contratoSugerido(p)))}</span></div>
@@ -221,19 +200,30 @@ function ContratoTab({ p }: { p: Peleador }) {
       )}
 
       {mio && c && (
-        <div className="stack" style={{ gap: 10 }}>
-          <button className="btn disabled" disabled>Renovar contrato · Fase 4</button>
-          <button className="btn danger" onClick={() => setConf('rescindir')}>Rescindir contrato</button>
-          <button className="btn danger" onClick={() => setConf('retirar')}>Retirar peleador</button>
-          <button className="btn" onClick={() => nav(`/editor/${p.id}`)}>Editar</button>
-        </div>
+        <>
+          {ofertas.length > 0 && (
+            <button className="alert warn" onClick={() => nav('/ofertas')}>
+              <Icon name="bolt" /><div className="grow" style={{ textAlign: 'left' }}>Tiene {ofertas.length} oferta{ofertas.length > 1 ? 's' : ''} de otras compañías. Toca para verlas.</div>
+            </button>
+          )}
+          <div className="stack" style={{ gap: 10 }}>
+            <button className="btn primary" disabled={bloqueado} onClick={() => setNegociando('renovar')}>Renovar / renegociar contrato</button>
+            <button className={`btn ${p.enVenta ? 'primary' : ''}`} onClick={() => acciones.enVenta(p.id)}>
+              {p.enVenta ? 'En venta · quitar de la lista' : 'Poner en venta (recibir ofertas)'}
+            </button>
+            <button className="btn danger" onClick={() => setConf('rescindir')}>Rescindir contrato</button>
+            <button className="btn danger" onClick={() => setConf('retirar')}>Retirar peleador</button>
+            <button className="btn" onClick={() => nav(`/editor/${p.id}`)}>Editar</button>
+          </div>
+        </>
       )}
 
       <div className="card">
         <h3>Patrocinios personales</h3>
-        <p className="muted small">Los peleadores consiguen sus propios patrocinios según su popularidad (Fase 4). Suben su moral y su exigencia al renovar.</p>
+        <p className="muted small">Los peleadores consiguen sus propios patrocinios según su popularidad (Fase 5). Suben su moral y su exigencia al renovar.</p>
       </div>
 
+      {negociando && <NegociarSheet p={p} modo={negociando} onClose={() => setNegociando(null)} />}
       {conf === 'rescindir' && c && (
         <Confirmar titulo="¿Rescindir contrato?" peligro confirmar="Rescindir"
           texto={`Pagarás una indemnización de ${dinero(costoRescision(c))} y ${p.nombre} quedará como agente libre (otra compañía podría ficharlo).`}

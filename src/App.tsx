@@ -11,6 +11,7 @@ import { Home } from './screens/Home';
 import { Landing } from './screens/Landing';
 import { Mas } from './screens/Mas';
 import { Noticias } from './screens/Noticias';
+import { Ofertas } from './screens/Ofertas';
 import { Proximamente } from './screens/Proximamente';
 import { Rankings } from './screens/Rankings';
 import { Roster } from './screens/Roster';
@@ -62,6 +63,7 @@ export function App() {
             <Route path="/rankings" element={<Rankings />} />
             <Route path="/companias" element={<Companias />} />
             <Route path="/noticias" element={<Noticias />} />
+            <Route path="/ofertas" element={<Ofertas />} />
             <Route path="/empresa" element={<Empresa />} />
             <Route path="/ajustes" element={<Ajustes />} />
             <Route path="/torneos" element={<Proximamente titulo="Torneos" fase="Fase 3" texto="Llaves de 4, 8 o 16 peleadores, estilo vieja escuela o moderno." />} />

@@ -6,7 +6,9 @@ import {
 } from './peleador';
 import { recalcularRankings } from './rankings';
 import { agregarNoticia } from './semana';
-import type { ClaseId, Genero, Juego, Peleador } from './types';
+import { NEGOCIACION } from '../config/balance';
+import { evaluarOferta, type ModoContrato, type RespuestaNegociacion } from './negociacion';
+import type { ClaseId, Contrato, Genero, Juego, Peleador } from './types';
 
 const miCompania = (j: Juego) => j.companias.find(c => c.esMia)!;
 
@@ -142,3 +144,49 @@ export function borrarNoticias(j: Juego, ids: number[]): void {
   const s = new Set(ids);
   j.noticias = j.noticias.filter(n => !s.has(n.id));
 }
+
+// Firma un contrato ya aceptado por el peleador (paga el bono de firma o de renovación)
+export function firmarContrato(j: Juego, id: number, contrato: Contrato, modo: ModoContrato): string | null {
+  const i = indice(j, id);
+  const p = j.peleadores[i];
+  if (!p) return 'Peleador no encontrado.';
+  if (modo === 'fichar' && (p.companiaId || p.retirado)) return 'Este peleador ya no es agente libre.';
+  if (modo === 'renovar' && p.companiaId !== j.miId) return 'Ese peleador no es tuyo.';
+  const costo = Math.round(bonoFirma(contrato) * (modo === 'renovar' ? NEGOCIACION.bonoRenovacionPct : 1));
+  const mia = miCompania(j);
+  if (mia.dinero < costo) return `No te alcanza: el bono de ${modo === 'renovar' ? 'renovación' : 'firma'} es ${dinero(costo)}.`;
+  mia.dinero -= costo;
+  const nuevo: Contrato = { ...contrato, clausula: contrato.clausula || clausulaDe(contrato, p.edad) };
+  j.peleadores[i] = {
+    ...p, companiaId: j.miId, contrato: nuevo, moral: Math.min(100, p.moral + (modo === 'renovar' ? 3 : 5)), enVenta: false,
+  };
+  agregarNoticia(j, {
+    categoria: 'peleadores', peleadorId: id,
+    titulo: modo === 'renovar' ? `Renovaste a ${nombreCompleto(p)}` : `Fichaste a ${nombreCompleto(p)}`,
+    cuerpo: `${nuevo.peleasRestantes} peleas, bolsa ${dinero(nuevo.bolsa)}, cláusula ${dinero(nuevo.clausula)}. Bono: ${dinero(costo)}.`,
+  });
+  recalcularRankings(j, [j.miId]);
+  return null;
+}
+
+// Ofrece un contrato: si acepta, firma; si se ofende, queda sin negociar unas semanas
+export function negociar(j: Juego, id: number, oferta: Contrato, modo: ModoContrato): RespuestaNegociacion {
+  const i = indice(j, id);
+  const p = j.peleadores[i];
+  if (!p) return { tipo: 'rechaza', mensaje: 'Peleador no encontrado.', ofendido: false };
+  const r = evaluarOferta(j, p, oferta);
+  if (r.tipo === 'acepta') {
+    const err = firmarContrato(j, id, oferta, modo);
+    if (err) return { tipo: 'rechaza', mensaje: err, ofendido: false };
+  } else if (r.tipo === 'rechaza' && r.ofendido) {
+    j.peleadores[i] = { ...p, sinNegociarHasta: j.semanaAbs + NEGOCIACION.semanasOfendido };
+  }
+  return r;
+}
+
+export function alternarEnVenta(j: Juego, id: number): void {
+  const i = indice(j, id);
+  if (i >= 0) j.peleadores[i] = { ...j.peleadores[i], enVenta: !j.peleadores[i].enVenta };
+}
+
+export { aceptarOferta, contraofertar, rechazarOferta } from './traspasos';

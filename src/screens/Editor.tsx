@@ -22,6 +22,7 @@ const plantilla = (): Peleador => ({
   rec: { tot: { v: 0, d: 0, e: 0, nc: 0 }, mio: { v: 0, d: 0, e: 0, nc: 0 } },
   finales: { ko: 0, tko: 0, sub: 0, dec: 0 }, forma: [], racha: { tipo: 'V', n: 0 }, mejorRachaV: 0, peorRachaD: 0,
   ganancias: 0, ultimoCombate: null, favorito: false, retirado: false, elite: false,
+  enVenta: false, sinNegociarHasta: 0, descansoHasta: 0, peleas: [],
 });
 
 export function Editor() {

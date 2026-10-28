@@ -1,5 +1,5 @@
 import {
-  AGENTES_LIBRES_INICIALES, AGENTES_LIBRES_TALENTO, COMPANIAS_RIVALES, type CompaniaCfg,
+  AGENTES_LIBRES_BAJOS, AGENTES_LIBRES_INICIALES, AGENTES_LIBRES_TALENTO, COMPANIAS_RIVALES, type CompaniaCfg,
 } from '../config/companias';
 import { CICLO_VIDA, DIFICULTAD, EMPRESA } from '../config/balance';
 import {
@@ -29,6 +29,7 @@ export interface OpcionesPeleador {
   sesgoPais?: Record<string, number>;
   edad?: [number, number];     // rango fijo (para nuevos talentos)
   genero?: Genero;
+  talentoMin?: number;
   talentoMax?: number;         // tope de talento (los agentes libres no son estrellas)
   popMax?: number;
 }
@@ -133,7 +134,7 @@ export function crearPeleador(
   const estilo = rng.weighted(Object.keys(PERFIL_ESTILO) as Estilo[], e => PERFIL_ESTILO[e].peso);
   const perfil = PERFIL_ESTILO[estilo];
 
-  const talento = clamp(rng.normal(op.talentoMedia, op.talentoDesv), 1.2, op.talentoMax ?? 9.8);
+  const talento = clamp(rng.normal(op.talentoMedia, op.talentoDesv), op.talentoMin ?? 1.2, op.talentoMax ?? 9.8);
   const edad = op.edad ? rng.int(op.edad[0], op.edad[1]) : elegirEdad(rng, talento);
   const T = talento * ESCALA_TALENTO;
   const ft = factorTecnico(edad);
@@ -171,6 +172,7 @@ export function crearPeleador(
     finales: { ko: 0, tko: 0, sub: 0, dec: 0 },
     forma: [], racha: { tipo: 'V', n: 0 }, mejorRachaV: 0, peorRachaD: 0,
     ganancias: 0, ultimoCombate: null, favorito: false, retirado: false, elite: false,
+    enVenta: false, sinNegociarHasta: 0, descansoHasta: 0, peleas: [],
   };
 
   const calif = estrellasCalif(p) * 2;
@@ -264,6 +266,15 @@ export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Jue
     }, usados));
   }
 
+  const nBajos = DIFICULTAD[nueva.dificultad].libresBajos;
+  for (let i = 0; i < nBajos; i++) {
+    peleadores.push(crearPeleador(rng, id++, {
+      companiaId: null, talentoMedia: AGENTES_LIBRES_BAJOS.media, talentoDesv: AGENTES_LIBRES_BAJOS.desv,
+      talentoMin: AGENTES_LIBRES_BAJOS.min, talentoMax: AGENTES_LIBRES_BAJOS.max, popMax: AGENTES_LIBRES_BAJOS.popMax,
+      pctMujeres: 0.15,
+    }, usados));
+  }
+
   // Divisiones de las compañías rivales (la mía empieza sin ninguna)
   const divisiones: Division[] = [];
   for (const c of COMPANIAS_RIVALES) {
@@ -280,7 +291,8 @@ export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Jue
   const j: Juego = {
     version: 1, nombre: nueva.nombre, dificultad: nueva.dificultad, miId,
     semanaAbs: 0, rngState: rng.state, sigId: id, sigNoticia: 1,
-    companias, peleadores, divisiones, eventos: [], noticias: [],
+    companias, peleadores, divisiones, eventos: [], ofertas: [], sigEvento: 1, sigPelea: 1, sigOferta: 1,
+    contadores: { ppv: 0, noche: 0 }, poblacionObjetivo: id - 1, noticias: [],
     ajustes: {
       unidades: 'metrico', gameOver: true, velocidadSim: 2, nombresDivision: 'es',
       recordatorioRespaldo: true,
@@ -303,12 +315,13 @@ export function generarProspectos(j: Juego, rng: Rng, n: number): Peleador[] {
   const nuevos: Peleador[] = [];
   for (let i = 0; i < n; i++) {
     const libre = rng.chance(CICLO_VIDA.pctNuevosLibres);
+    const bajo = libre && rng.chance(DIFICULTAD[j.dificultad].libresBajos / (DIFICULTAD[j.dificultad].libresBajos + AGENTES_LIBRES_INICIALES));
     const cfg = libre ? null : rng.weighted(rivales, c => c.peleadores);
-    const media = libre ? AGENTES_LIBRES_TALENTO.media : cfg!.talentoMedia - 0.4;
+    const media = bajo ? AGENTES_LIBRES_BAJOS.media : libre ? AGENTES_LIBRES_TALENTO.media : cfg!.talentoMedia - 0.4;
     const p = crearPeleador(rng, j.sigId++, {
-      companiaId: cfg?.id ?? null, talentoMedia: media, talentoDesv: libre ? AGENTES_LIBRES_TALENTO.desv : cfg!.talentoDesv,
+      companiaId: cfg?.id ?? null, talentoMedia: media, talentoDesv: bajo ? AGENTES_LIBRES_BAJOS.desv : libre ? AGENTES_LIBRES_TALENTO.desv : cfg!.talentoDesv,
       pctMujeres: cfg?.pctMujeres ?? 0.15, sesgoPais: cfg?.sesgoPais,
-      ...(libre ? { talentoMax: AGENTES_LIBRES_TALENTO.max, popMax: AGENTES_LIBRES_TALENTO.popMax } : {}),
+      ...(bajo ? { talentoMin: AGENTES_LIBRES_BAJOS.min, talentoMax: AGENTES_LIBRES_BAJOS.max, popMax: AGENTES_LIBRES_BAJOS.popMax } : libre ? { talentoMax: AGENTES_LIBRES_TALENTO.max, popMax: AGENTES_LIBRES_TALENTO.popMax } : {}),
       edad: CICLO_VIDA.edadDebut as [number, number],
     }, usados);
     // Los novatos tienen pocas peleas y poca fama

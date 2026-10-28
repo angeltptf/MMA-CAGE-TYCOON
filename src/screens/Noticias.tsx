@@ -4,6 +4,7 @@ import { fechaCorta } from '../domain/format';
 import { borrarNoticias, marcarNoticia } from '../domain/acciones';
 import type { CategoriaNoticia } from '../domain/types';
 import { useGame } from '../store/game';
+import { acciones } from '../store/game';
 import { Icon } from '../ui/Icon';
 import { Tabs, TopBar, Vacio } from '../ui/kit';
 
@@ -51,6 +52,13 @@ export function Noticias() {
             {abierta === n.id && (n.cuerpo || n.peleadorId) && (
               <div className="stack" style={{ paddingLeft: 62, gap: 8 }}>
                 {n.cuerpo && <p className="muted">{n.cuerpo}</p>}
+                {n.ofertaId != null && juego.ofertas.find(o => o.id === n.ofertaId)?.estado === 'pendiente' && (
+                  <div className="row">
+                    <button className="btn small primary grow" onClick={e => { e.stopPropagation(); acciones.aceptarOferta(n.ofertaId!); }}>Aceptar</button>
+                    <button className="btn small danger grow" onClick={e => { e.stopPropagation(); acciones.rechazarOferta(n.ofertaId!); }}>Rechazar</button>
+                    <button className="btn small grow" onClick={e => { e.stopPropagation(); nav('/ofertas'); }}>Contraofertar</button>
+                  </div>
+                )}
                 {n.peleadorId && <button className="btn small" onClick={e => { e.stopPropagation(); nav(`/peleador/${n.peleadorId}`); }}>Ver peleador</button>}
               </div>
             )}

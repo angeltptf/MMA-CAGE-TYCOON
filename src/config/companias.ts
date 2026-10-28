@@ -52,7 +52,9 @@ export const COMPANIAS_RIVALES: CompaniaCfg[] = [
     talentoMedia: 3.8, talentoDesv: 1.3, pctMujeres: 0.08, sesgoPais: { RU: 6, KZ: 4, GE: 2, US: 0.2, MX: 0.2, BR: 0.4 } },
 ];
 
-export const TOTAL_PELEADORES_OBJETIVO = 1500;
 export const AGENTES_LIBRES_INICIALES = 340;
 // Los agentes libres son talento sin firmar: veteranos liberados y prospectos, no estrellas
 export const AGENTES_LIBRES_TALENTO = { media: 3.6, desv: 1.1, max: 6.2, popMax: 38 };
+
+// Agentes libres "bajos": gente de 0-1 estrellas que se puede fichar casi gratis
+export const AGENTES_LIBRES_BAJOS = { media: 1.7, desv: 0.7, min: 0.4, max: 3.0, popMax: 8 };

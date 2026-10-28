@@ -11,11 +11,11 @@ const nueva = { nombre: 'Prueba FC', siglas: 'PFC', color: '#C8F53C', pais: 'MX'
 describe('generación del mundo', () => {
   const j = crearMundo(nueva, 12345);
 
-  it('crea ~1500 peleadores y 10 compañías rivales', () => {
-    expect(j.peleadores.length).toBe(1500);
+  it('crea 2,250 peleadores (Normal) y 10 compañías rivales', () => {
+    expect(j.peleadores.length).toBe(2250);
     expect(j.companias.length).toBe(11);
     expect(j.peleadores.filter(p => p.companiaId === 'mia').length).toBe(0);
-    expect(j.peleadores.filter(p => p.companiaId === null).length).toBe(340);
+    expect(j.peleadores.filter(p => p.companiaId === null).length).toBe(340 + 750);
   });
 
   it('es determinista con la misma semilla', () => {
@@ -72,8 +72,8 @@ describe('semana', () => {
     let j = crearMundo(nueva, 7);
     for (let i = 0; i < 520; i++) j = avanzarSemana(j).juego;
     const activos = j.peleadores.filter(p => !p.retirado).length;
-    expect(activos).toBeGreaterThan(1380);
-    expect(activos).toBeLessThan(1620);
+    expect(activos).toBeGreaterThan(j.poblacionObjetivo * 0.92);
+    expect(activos).toBeLessThan(j.poblacionObjetivo * 1.08);
     expect(j.peleadores.some(p => p.retirado)).toBe(true);
     // nadie supera el tope duro
     for (const p of j.peleadores) {

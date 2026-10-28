@@ -1,7 +1,9 @@
 import { create } from 'zustand';
 import * as A from '../domain/acciones';
 import { avanzarSemana, clonarJuego, type ResumenSemana } from '../domain/semana';
-import type { Ajustes, Juego, NuevaPartida, Peleador } from '../domain/types';
+import type { RespuestaNegociacion, ModoContrato } from '../domain/negociacion';
+import type { Ajustes, Contrato, Juego, NuevaPartida, Peleador } from '../domain/types';
+import { normalizarJuego } from '../domain/migracion';
 import { crearMundo } from '../domain/worldgen';
 import { borrarPartida, cargarPartida, guardarPartida, pedirAlmacenamientoPersistente } from './db';
 
@@ -21,6 +23,8 @@ interface Estado {
   avanzar: () => void;
   // Ejecuta una acción del dominio sobre una copia; devuelve el error (o null)
   hacer: (fn: (j: Juego) => string | null | void, exito?: string) => string | null;
+  negociar: (id: number, oferta: Contrato, modo: ModoContrato) => RespuestaNegociacion;
+  contraofertar: (ofertaId: number, monto: number) => { ok: boolean; mensaje: string };
   actualizarAjustes: (a: Partial<Ajustes>) => void;
   editarEmpresa: (c: { nombre?: string; siglas?: string; color?: string; pais?: string }) => void;
   marcarRespaldo: () => void;
@@ -64,12 +68,12 @@ export const useGame = create<Estado>((set, get) => {
     cargar: async ranura => {
       const j = await cargarPartida(ranura);
       if (!j) return false;
-      set({ juego: j, ranura });
+      set({ juego: normalizarJuego(j), ranura });
       void pedirAlmacenamientoPersistente();
       return true;
     },
     cargarDesdeJuego: async (ranura, j) => {
-      set({ juego: j, ranura });
+      set({ juego: normalizarJuego(j), ranura });
       await guardarAhora();
     },
     salir: () => {
@@ -100,6 +104,22 @@ export const useGame = create<Estado>((set, get) => {
       return null;
     },
 
+    negociar: (id, oferta, modo) => {
+      const j = get().juego;
+      if (!j) return { tipo: 'rechaza', mensaje: 'Sin partida.', ofendido: false };
+      const copia = clonarJuego(j);
+      const r = A.negociar(copia, id, oferta, modo);
+      aplicar(copia);
+      return r;
+    },
+    contraofertar: (ofertaId, monto) => {
+      const j = get().juego;
+      if (!j) return { ok: false, mensaje: 'Sin partida.' };
+      const copia = clonarJuego(j);
+      const r = A.contraofertar(copia, ofertaId, monto);
+      aplicar(copia);
+      return r;
+    },
     actualizarAjustes: a => {
       const j = get().juego;
       if (!j) return;
@@ -128,6 +148,9 @@ export const acciones = {
   robar: (id: number) => useGame.getState().hacer(j => A.robarPeleador(j, id), 'Peleador fichado'),
   rescindir: (id: number) => useGame.getState().hacer(j => A.rescindirContrato(j, id), 'Contrato rescindido'),
   retirar: (id: number) => useGame.getState().hacer(j => A.retirarPeleador(j, id), 'Peleador retirado'),
+  enVenta: (id: number) => useGame.getState().hacer(j => { A.alternarEnVenta(j, id); }),
+  aceptarOferta: (id: number) => useGame.getState().hacer(j => A.aceptarOferta(j, id), 'Traspaso cerrado'),
+  rechazarOferta: (id: number) => useGame.getState().hacer(j => A.rechazarOferta(j, id), 'Oferta rechazada'),
   favorito: (id: number) => useGame.getState().hacer(j => { A.alternarFavorito(j, id); }),
   guardarPeleador: (p: Peleador) => useGame.getState().hacer(j => { A.guardarPeleador(j, p); }, 'Cambios guardados'),
   crearDivision: (g: 'M' | 'F', c: Peleador['clase']) => useGame.getState().hacer(j => A.crearDivision(j, g, c), 'División creada'),
