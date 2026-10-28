@@ -23,6 +23,12 @@ export function Rankings() {
     () => (scope === 'global' ? rankingGlobal(juego, g, d) : rankingCompania(juego, scope, g, d)),
     [juego, scope, g, d],
   );
+  const divActual = scope === juego.miId && d !== 'p4p' ? juego.divisiones.find(x => x.id === `${scope}:${g}:${d}`) : undefined;
+  const flecha = (id: number, rank: number) => {
+    const prev = divActual?.previo?.[id];
+    if (prev == null || prev === rank) return '';
+    return prev > rank ? '▲' : '▼';
+  };
   const siglas = useMemo(() => new Map(juego.companias.map(c => [c.id, c.siglas])), [juego.companias]);
   const clases = DIVISIONES_GENERO[g];
   const claseValida = d === 'p4p' || clases.includes(d);
@@ -45,7 +51,7 @@ export function Rankings() {
           <Vacio titulo="Sin ranking" texto={scope === juego.miId ? 'Esta división no existe o aún no tiene peleadores. Fícha agentes libres de esta división.' : 'No hay peleadores en esta división.'} />
         ) : filas.map(f => (
           <button key={f.peleador.id} className="list-item" style={{ width: '100%', textAlign: 'left' }} onClick={() => nav(`/peleador/${f.peleador.id}`)}>
-            <span className="num" style={{ width: 34, fontSize: 24, color: f.campeon ? 'var(--accent)' : undefined }}>{f.campeon && scope !== 'global' && f.rank === 0 ? 'C' : f.rank || (f.campeon ? 'C' : '')}</span>
+            <span className="num" style={{ width: 34, fontSize: 24, color: f.campeon ? 'var(--accent)' : undefined }}>{f.campeon && scope !== 'global' && f.rank === 0 ? 'C' : f.rank || (f.campeon ? 'C' : '')}<small style={{ display: 'block', fontSize: 11, color: flecha(f.peleador.id, f.rank) === '▲' ? 'var(--ok)' : 'var(--bad)' }}>{flecha(f.peleador.id, f.rank)}</small></span>
             <Avatar p={f.peleador} size={44} />
             <span className="grow" style={{ minWidth: 0 }}>
               <div className="row" style={{ gap: 6 }}>
@@ -60,7 +66,7 @@ export function Rankings() {
           </button>
         ))}
         <p className="muted small center" style={{ padding: 16 }}>
-          Por ahora el ranking se calcula con calificación, fama y récord. Desde la Fase 3 se mueve según tus resultados.
+          En tus divisiones el ranking se mueve con tus resultados: ganarle a alguien mejor rankeado te sube mucho, la inactividad baja y perder contra un #1 duele menos que contra un #14. Las flechas comparan con el evento anterior. En las demás compañías se calcula con calificación, fama y récord.
         </p>
       </div>
     </>

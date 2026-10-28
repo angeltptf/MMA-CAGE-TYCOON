@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ATRIBUTO_LABEL, ATRIBUTOS_FIS, DISCIPLINAS, DISCIPLINA_LABEL, ESTILOS } from '../config/divisiones';
 import { nombrePais } from '../config/paises';
-import { abrevClase, altura, anio, dinero, nombreClase, peso, semanaDelAnio } from '../domain/format';
+import { abrevClase, altura, anio, dinero, fechaCorta, nombreClase, peso } from '../domain/format';
 import {
   bonoFirma, contratoSugerido, costoRescision, disponible, estatus, estrellasCalif, nombreCompleto,
   recordTxt, totalPeleas,
@@ -245,18 +245,43 @@ function ContratoTab({ p }: { p: Peleador }) {
 
 function Historial({ p }: { p: Peleador }) {
   const juego = useGame(s => s.juego)!;
-  return (
-    <div className="stack">
-      <div className="card">
-        <h3>Últimas peleas</h3>
-        <Forma forma={p.forma} />
-        <div className="kv" style={{ marginTop: 10 }}><span className="k">Récord total</span><span className="v">{recordTxt(p.rec.tot)}</span></div>
-        <div className="kv"><span className="k">Récord en {juego.nombre}</span><span className="v">{recordTxt(p.rec.mio)}</span></div>
+  const nav = useNavigate();
+  if (!p.peleas.length) {
+    return (
+      <div className="stack">
+        <div className="card">
+          <h3>Forma</h3>
+          <Forma forma={p.forma} />
+          <div className="kv" style={{ marginTop: 10 }}><span className="k">Récord total</span><span className="v">{recordTxt(p.rec.tot)}</span></div>
+          <div className="kv"><span className="k">Récord en {juego.nombre}</span><span className="v">{recordTxt(p.rec.mio)}</span></div>
+        </div>
+        <Vacio titulo="Aún sin peleas en tu empresa" texto="Cuando pelee en tus eventos, aquí verás cada pelea con su rival, método, round y tiempo." />
       </div>
-      <Vacio
-        titulo="Aún sin peleas en tu empresa"
-        texto="Cuando organices eventos, aquí verás cada pelea: rival, método, round y tiempo, con el detalle completo. Llega en las Fases 2 y 3."
-      />
+    );
+  }
+  const rk = (r: number) => (r === 0 ? 'C' : r < 99 ? `#${r}` : '');
+  return (
+    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      {p.peleas.map(h => {
+        const existe = juego.eventos.some(e => e.id === h.eventoId && e.cartelera.some(b => b.id === h.peleaId));
+        const color = h.resultado === 'V' ? 'var(--ok)' : h.resultado === 'D' ? 'var(--bad)' : '#8b93a0';
+        return (
+          <button key={h.peleaId} className="list-item" style={{ width: '100%', textAlign: 'left', borderLeft: `5px solid ${color}`, alignItems: 'flex-start' }}
+            onClick={() => existe && nav(`/pelea/${h.eventoId}/${h.peleaId}`)}>
+            <span className="grow" style={{ minWidth: 0 }}>
+              <div className="muted small">{h.eventoNombre} · {fechaCorta(h.semana)}{h.etiquetaTorneo ? ` · ${h.etiquetaTorneo}` : ''}</div>
+              <div className="mid">vs {h.rivalNombre}</div>
+              <div className="muted small">
+                {nombreClase(h.clase, juego.ajustes.nombresDivision)}{h.titulo ? ' · Campeonato' : ''} · {h.miRecord} {rk(h.miRank)} vs {h.rivalRecord} {rk(h.rivalRank)}
+              </div>
+            </span>
+            <span className="num" style={{ color, textAlign: 'right' }}>
+              {h.resultado === 'V' ? 'GANÓ' : h.resultado === 'D' ? 'PERDIÓ' : 'EMPATE'}
+              <div className="small muted" style={{ fontFamily: 'var(--font-body)' }}>{h.metodo === 'E' || h.metodo === 'NC' ? '' : `${h.metodo} R${h.round} ${h.tiempo}`}</div>
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -265,16 +290,24 @@ function Records({ p }: { p: Peleador }) {
   const juego = useGame(s => s.juego)!;
   const titulos = juego.divisiones.filter(d => d.campeonId === p.id);
   const f = p.finales;
+  const r = p.rcd;
   const filas: [string, string | number][] = [
+    ['Defensas de título consecutivas', r.defensasConsec],
+    ['Defensas de título', r.defensas],
+    ['Reinados de título', r.reinados],
+    ['Edad en su primer título', r.edadPrimerTitulo ?? '—'],
+    ['Edad en su último título', r.edadUltimoTitulo ?? '—'],
+    ['Campeón actual', titulos.length ? titulos.map(d => abrevClase(d.clase, d.genero)).join(', ') : 'No'],
+    ['Bonos de actuación', r.actuaciones],
+    ['Racha ganadora más larga', p.mejorRachaV],
+    ['Racha perdedora más larga', p.peorRachaD],
+    ['Racha actual', p.racha.n ? `${p.racha.n}${p.racha.tipo}` : '—'],
     ['Peleas', totalPeleas(p.rec.tot)],
     ['Victorias', p.rec.tot.v], ['Derrotas', p.rec.tot.d], ['Empates', p.rec.tot.e],
     ['Finalizaciones', f.ko + f.tko + f.sub],
     ['KO', f.ko], ['TKO', f.tko], ['Sumisiones', f.sub], ['Decisiones', f.dec],
-    ['Racha actual', p.racha.n ? `${p.racha.n}${p.racha.tipo === 'V' ? 'V' : p.racha.tipo === 'D' ? 'D' : 'E'}` : '—'],
-    ['Racha ganadora más larga', p.mejorRachaV], ['Racha perdedora más larga', p.peorRachaD],
-    ['Campeón actual', titulos.length ? titulos.map(d => abrevClase(d.clase, d.genero)).join(', ') : 'No'],
-    ['Defensas de título', '—'], ['Reinados', '—'], ['Bonos de actuación', 0],
-    ['Peleas de la noche', 0], ['Actuaciones de la noche', 0],
+    ['Peleas de la noche', r.peleaNoche],
+    ['Peleador de la noche', r.peleadorNoche],
   ];
   return (
     <div className="card">
@@ -285,15 +318,36 @@ function Records({ p }: { p: Peleador }) {
 
 function Ganancias({ p }: { p: Peleador }) {
   const juego = useGame(s => s.juego)!;
+  const total = (h: Peleador['peleas'][number]) => { const g = h.ganancia; return g ? g.bolsa + g.victoria + g.campeonato + g.finalizacion + g.noche : 0; };
+  const delAnio = p.peleas.filter(h => anio(h.semana) === anio(juego.semanaAbs)).reduce((a, h) => a + total(h), 0);
   return (
     <div className="stack">
       <div className="card">
         <div className="label">Ganancias totales en tu empresa</div>
         <div className="big accent" style={{ marginTop: 6 }}>{dinero(p.ganancias)}</div>
-        <div className="kv" style={{ marginTop: 12 }}><span className="k">Año {anio(juego.semanaAbs)} (semana {semanaDelAnio(juego.semanaAbs)})</span><span className="v">{dinero(0)}</span></div>
+        <div className="kv" style={{ marginTop: 12 }}><span className="k">Año {anio(juego.semanaAbs)}</span><span className="v">{dinero(delAnio)}</span></div>
+        <div className="kv"><span className="k">Bonos de la noche (acumulado)</span><span className="v">{dinero(p.rcd.bonosDinero)}</span></div>
+        <div className="kv"><span className="k">Patrocinios personales</span><span className="v">n/a · Fase 5</span></div>
       </div>
-      <Vacio titulo="Sin pagos todavía" texto="El desglose pelea por pelea (bolsa, bonos, PPV y patrocinios) aparece cuando pelee en tus eventos." />
+      {p.peleas.length === 0 ? <Vacio titulo="Sin pagos todavía" texto="El desglose pelea por pelea aparece cuando pelee en tus eventos." /> : (
+        <div className="stack">
+          {p.peleas.map(h => (
+            <div key={h.peleaId} className="card">
+              <div className="row between"><b>{h.eventoNombre}</b><b className="accent">{dinero(total(h))}</b></div>
+              <div className="muted small" style={{ marginBottom: 6 }}>vs {h.rivalNombre} · {h.resultado === 'V' ? 'Ganó' : h.resultado === 'D' ? 'Perdió' : 'Empate'}</div>
+              {h.ganancia && (
+                <>
+                  <div className="kv"><span className="k">Bolsa</span><span className="v">{dinero(h.ganancia.bolsa)}</span></div>
+                  {h.ganancia.victoria > 0 && <div className="kv"><span className="k">Bono por victoria</span><span className="v">{dinero(h.ganancia.victoria)}</span></div>}
+                  {h.ganancia.campeonato > 0 && <div className="kv"><span className="k">Bono de campeonato</span><span className="v">{dinero(h.ganancia.campeonato)}</span></div>}
+                  {h.ganancia.finalizacion > 0 && <div className="kv"><span className="k">Bono por finalización</span><span className="v">{dinero(h.ganancia.finalizacion)}</span></div>}
+                  {h.ganancia.noche > 0 && <div className="kv"><span className="k">Bonos de la noche</span><span className="v">{dinero(h.ganancia.noche)}</span></div>}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-

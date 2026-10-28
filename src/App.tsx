@@ -11,6 +11,7 @@ import { Eventos } from './screens/Eventos';
 import { Noche } from './screens/Noche';
 import { ProgramarPelea } from './screens/ProgramarPelea';
 import { Sedes } from './screens/Sedes';
+import { Torneo, Torneos } from './screens/Torneos';
 import { Empresa } from './screens/Empresa';
 import { Ficha } from './screens/Ficha';
 import { Home } from './screens/Home';
@@ -77,7 +78,8 @@ export function App() {
             <Route path="/ofertas" element={<Ofertas />} />
             <Route path="/empresa" element={<Empresa />} />
             <Route path="/ajustes" element={<Ajustes />} />
-            <Route path="/torneos" element={<Proximamente titulo="Torneos" fase="Fase 3" texto="Llaves de 4, 8 o 16 peleadores, estilo vieja escuela o moderno." />} />
+            <Route path="/torneos" element={<Torneos />} />
+            <Route path="/torneo/:id" element={<Torneo />} />
             <Route path="/registros" element={<Proximamente titulo="Registros" fase="Fase 6" texto="Récords históricos de tu empresa." />} />
             <Route path="/salon" element={<Proximamente titulo="Salón de la Fama" fase="Fase 6" texto="Los peleadores retirados más destacados." />} />
             <Route path="/premios" element={<Proximamente titulo="Premios anuales" fase="Fase 6" texto="Peleador, Pelea, KO y Sumisión del Año." />} />

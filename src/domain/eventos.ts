@@ -21,7 +21,7 @@ export const eventoPendienteHoy = (j: Juego): Evento | undefined => {
 export const proximoEvento = (j: Juego): Evento | undefined =>
   j.eventos.filter(e => e.estado === 'borrador' && e.semana >= j.semanaAbs).sort((a, b) => a.semana - b.semana)[0];
 
-export const boutVacia = (b: Pelea) => b.aId == null || b.bId == null;
+export const boutVacia = (b: Pelea) => !b.torneoId && (b.aId == null || b.bId == null);
 export const estaCompleto = (e: Evento) => e.cartelera.length > 0 && e.cartelera.every(b => !boutVacia(b));
 export const puedeAvanzarSemana = (j: Juego) => !eventoPendienteHoy(j);
 
@@ -212,7 +212,7 @@ export function boutNueva(j: Juego, genero: Pelea['genero'] = 'M', clase: Pelea[
   return { id: j.sigPelea++, genero, clase, aId: null, bId: null, titulo: false, interino: false, rounds: 3, hype: 0 };
 }
 
-function sedeInicial(j: Juego): Sede {
+export function sedeInicial(j: Juego): Sede {
   const mia = miComp(j);
   const locales = SEDES.filter(s => s.pais === mia.pais && sedeDesbloqueada(j, s) && s.aforo <= 900).sort((a, b) => b.aforo - a.aforo);
   if (locales[0]) return locales[0];
@@ -286,7 +286,17 @@ export function validarPelea(
   if (!b.titulo && Math.abs(ra - rb) > 6 && Math.min(ra, rb) <= 5) avisos.push('Pelea sin mucha lógica: un top 5 contra alguien muy abajo en el ranking.');
   if (b.titulo) {
     const d = j.divisiones.find(x => x.id === `${j.miId}:${b.genero}:${b.clase}`);
-    if (d?.campeonId != null && a.id !== d.campeonId && c.id !== d.campeonId && !b.interino) {
+    const camp = d?.campeonId ?? null;
+    const inter = d?.interinoId ?? null;
+    const ids = [a.id, c.id];
+    if (b.interino) {
+      const pc = camp != null ? j.peleadores.find(p => p.id === camp) : undefined;
+      if (camp == null) errores.push('No hay campeón: usa un campeonato normal (título vacante).');
+      else if (ids.includes(camp)) errores.push('El campeón no puede pelear por el título interino.');
+      else if (pc && !pc.retirado && !(pc.lesion && pc.lesion.semanas >= 10)) errores.push('El título interino solo se crea si el campeón va a estar fuera mucho tiempo (lesión de 10 semanas o más).');
+    } else if (camp != null && inter != null) {
+      if (!(ids.includes(camp) && ids.includes(inter))) errores.push('Hay un campeón interino: la pelea por el título debe ser de unificación (campeón contra interino).');
+    } else if (camp != null && !ids.includes(camp)) {
       errores.push('Una pelea por el título debe incluir al campeón actual.');
     }
   }

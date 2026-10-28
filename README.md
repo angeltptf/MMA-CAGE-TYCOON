@@ -10,7 +10,7 @@ La especificación completa está en [`ESPECIFICACION_JUEGO_MMA.md`](ESPECIFICAC
 | 1 | Núcleo: PWA, diseño, guardado, mundo, peleadores, divisiones, rankings, avance de semanas | ✅ |
 | 2 | Eventos, calendario, matchmaking, sedes, boletos, motor de pelea, Noche de pelea | ✅ |
 | 1.5 | Hardcore ($50K), 2,000–3,000 peleadores, negociación de contratos, ofertas de rivales | ✅ |
-| 3 | Resultados, rankings por resultados, campeonatos, torneos, progresión | ⬜ |
+| 3 | Resultados, bonos de la noche, rankings por resultados, campeonatos, historial y récords, torneos | ✅ |
 | 4 | Contratos, ganancias, patrocinios personales, economía | ⬜ |
 | 5 | Negocios: patrocinios, TV, PPV, inversionistas | ⬜ |
 | 6 | Compañías rivales vivas, noticias, salón de la fama, premios | ⬜ |

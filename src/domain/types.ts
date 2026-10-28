@@ -72,6 +72,21 @@ export interface Peleador {
   sinNegociarHasta: number;   // semana absoluta; se ofendió con una oferta insultante
   descansoHasta: number;      // semana absoluta; no puede pelear antes
   peleas: HistorialPelea[];   // últimas peleas (la más reciente primero)
+  rankPts: number;            // puntos de ranking en mi empresa (suben y bajan con resultados)
+  rcd: RecordsPeleador;
+}
+
+export interface RecordsPeleador {
+  defensas: number;           // defensas de título totales
+  defensasConsec: number;     // defensas consecutivas del reinado actual
+  mejorDefensasConsec: number;
+  reinados: number;
+  edadPrimerTitulo: number | null;
+  edadUltimoTitulo: number | null;
+  peleadorNoche: number;
+  peleaNoche: number;
+  actuaciones: number;
+  bonosDinero: number;
 }
 
 export interface HistorialPelea {
@@ -92,6 +107,8 @@ export interface HistorialPelea {
   rivalRecord: string;
   miRank: number;             // 0 = campeón, 99 = sin ranking
   rivalRank: number;
+  ganancia?: { bolsa: number; victoria: number; campeonato: number; finalizacion: number; noche: number };
+  etiquetaTorneo?: string;
 }
 
 export interface Compania {
@@ -119,6 +136,7 @@ export interface Division {
   campeonId: number | null;
   interinoId: number | null;
   ranking: number[];          // #1..#15 (sin el campeón)
+  previo?: Record<number, number>; // lugar antes del último evento (0 = campeón), para las flechas
 }
 
 export type CategoriaNoticia = 'importante' | 'eventos' | 'peleadores' | 'negocios' | 'mundo';
@@ -157,6 +175,8 @@ export interface Juego {
   peleadores: Peleador[];
   divisiones: Division[];
   eventos: Evento[];
+  torneos: Torneo[];
+  sigTorneo: number;
   ofertas: OfertaTraspaso[];
   sigEvento: number;
   sigPelea: number;
@@ -179,7 +199,7 @@ export interface NuevaPartida {
 }
 
 // ---------- Eventos ----------
-export type TipoEvento = 'ppv' | 'noche';
+export type TipoEvento = 'ppv' | 'noche' | 'torneo';
 export type Metodo = 'KO' | 'TKO' | 'SUB' | 'DU' | 'DD' | 'DM' | 'E' | 'DQ' | 'NC';
 
 export interface StatsPelea {
@@ -223,6 +243,9 @@ export interface Pelea {
   interino: boolean;
   rounds: 3 | 5;
   hype: number;
+  torneoId?: number;          // si es una pelea de torneo
+  ronda?: number;             // 0 = primera ronda
+  slot?: number;              // posición dentro de la ronda
   snap?: { a: Instantanea; b: Instantanea };
   resultado?: ResultadoPelea;
 }
@@ -240,6 +263,7 @@ export interface FinanzasEvento {
   bolsas: number;
   bonosVictoria: number;
   bonosNoche: number;
+  premios: number;            // premios de torneo
   neto: number;
   popularidad: number;        // puntos ganados (o perdidos) por la empresa
   clima?: string;
@@ -259,9 +283,40 @@ export interface Evento {
   confirmado: boolean;
   cartelera: Pelea[];         // en orden: la primera es la más débil, la última el estelar
   finanzas?: FinanzasEvento;
-  peleadorNoche?: number;
-  peleaNoche?: number;
-  actuacionNoche?: number[];
+  torneoId?: number;
+  bonos?: BonosNoche;
+}
+
+export interface BonosNoche {
+  peleadorNoche: number | null;
+  peleaNoche: number | null;     // id de la pelea
+  actuaciones: number[];         // ids de peleadores (máx. 2)
+  pagado: boolean;
+  total: number;
+}
+
+// ---------- Torneos ----------
+export interface PartidoTorneo {
+  aId: number | null;
+  bId: number | null;
+  ganadorId: number | null;
+  peleaId?: number;
+  eventoId?: number;
+}
+
+export interface Torneo {
+  id: number;
+  nombre: string;
+  genero: Genero;
+  clase: ClaseId;
+  tam: 4 | 8 | 16;
+  tipo: 'vieja' | 'moderna';     // vieja escuela: todo en un evento · moderna: una ronda por evento
+  sorteoAuto: boolean;
+  otorgaTitulo: boolean;
+  cupos: (number | null)[];      // participantes elegidos
+  rondas: PartidoTorneo[][];     // vacío hasta sortear las llaves
+  estado: 'cupos' | 'llaves' | 'en_curso' | 'terminado';
+  campeonId?: number;
 }
 
 export interface OfertaTraspaso {

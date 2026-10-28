@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SEDE_POR_ID } from '../config/sedes';
 import { bandera } from '../config/paises';
@@ -15,14 +15,12 @@ export function Eventos() {
   const nav = useNavigate();
   const [nueva, setNueva] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const hoyRef = useRef<HTMLDivElement>(null);
-  const inicio = (anio(juego.semanaAbs) - 1) * 52;
+  const inicio = juego.semanaAbs; // la primera casilla siempre es la semana actual
 
   const celdas = useMemo(
     () => Array.from({ length: SEMANAS_MOSTRADAS }, (_, i) => ({ semana: inicio + i, evento: eventoDeSemana(juego, inicio + i) })),
     [juego, inicio],
   );
-  useEffect(() => { hoyRef.current?.scrollIntoView({ block: 'center' }); }, []);
 
   const crear = (tipo: 'ppv' | 'noche') => {
     if (nueva == null) return;
@@ -38,7 +36,7 @@ export function Eventos() {
     <>
       <TopBar titulo="Calendario" atras={false} />
       <div style={{ padding: '8px 16px 0' }} className="row between small muted">
-        <span>{fecha(juego.semanaAbs)} · Año {anio(juego.semanaAbs)} y {anio(juego.semanaAbs) + 1}</span>
+        <span>{fecha(juego.semanaAbs)}</span>
         <span>{proximos} evento{proximos === 1 ? '' : 's'} por hacer</span>
       </div>
       <div className="scroll">
@@ -49,7 +47,7 @@ export function Eventos() {
             const estado = evento ? estadoVisual(evento) : null;
             const sede = evento ? SEDE_POR_ID[evento.sedeId] : null;
             return (
-              <div key={semana} ref={hoy ? hoyRef : undefined} className={`cal-cell ${hoy ? 'hoy' : ''} ${pasada && !evento ? 'pasada' : ''}`}>
+              <div key={semana} className={`cal-cell ${hoy ? 'hoy' : ''} ${pasada && !evento ? 'pasada' : ''}`}>
                 <div className="cal-h">{fechaCorta(semana)}{hoy ? ' · hoy' : ''}</div>
                 {evento ? (
                   <button className={`cal-ev ${estado}`} onClick={() => nav(`/evento/${evento.id}`)}>
@@ -84,7 +82,7 @@ export function Eventos() {
             <p className="muted small">Evento de transmisión: más barato y con menos peso en la taquilla.</p>
             <button className="btn" onClick={() => crear('ppv')}>Evento numerado (PPV)</button>
             <p className="muted small">Gran evento numerado: cuesta más producirlo, pero mueve más audiencia.</p>
-            <button className="btn disabled" disabled>Torneo · Fase 3</button>
+            <button className="btn" onClick={() => { setNueva(null); nav('/torneos'); }}>Torneo (llaves de 4, 8 o 16)</button>
             <button className="btn disabled" disabled>Evento internacional · Fase 5</button>
           </div>
         </Sheet>

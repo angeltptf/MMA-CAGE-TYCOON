@@ -10,6 +10,7 @@ import {
   clausulaDe, contratoSugerido, factorFisico, factorTecnico, estrellasCalif, scoreCalif,
 } from './peleador';
 import { Rng, clamp } from './rng';
+import { rcdVacio } from './migracion';
 import { recalcularRankings } from './rankings';
 import type {
   ClaseId, Compania, Disciplina, Division, Estilo, Genero, Juego, NuevaPartida, Peleador, Rec,
@@ -173,6 +174,7 @@ export function crearPeleador(
     forma: [], racha: { tipo: 'V', n: 0 }, mejorRachaV: 0, peorRachaD: 0,
     ganancias: 0, ultimoCombate: null, favorito: false, retirado: false, elite: false,
     enVenta: false, sinNegociarHasta: 0, descansoHasta: 0, peleas: [],
+    rankPts: 0, rcd: rcdVacio(),
   };
 
   const calif = estrellasCalif(p) * 2;
@@ -292,7 +294,7 @@ export function crearMundo(nueva: NuevaPartida, semilla = Date.now() >>> 0): Jue
     version: 1, nombre: nueva.nombre, dificultad: nueva.dificultad, miId,
     semanaAbs: 0, rngState: rng.state, sigId: id, sigNoticia: 1,
     companias, peleadores, divisiones, eventos: [], ofertas: [], sigEvento: 1, sigPelea: 1, sigOferta: 1,
-    contadores: { ppv: 0, noche: 0 }, poblacionObjetivo: id - 1, noticias: [],
+    contadores: { ppv: 0, noche: 0 }, torneos: [], sigTorneo: 1, poblacionObjetivo: id - 1, noticias: [],
     ajustes: {
       unidades: 'metrico', gameOver: true, velocidadSim: 2, nombresDivision: 'es',
       recordatorioRespaldo: true,

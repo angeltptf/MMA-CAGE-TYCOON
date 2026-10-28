@@ -1,17 +1,21 @@
-// Noche de pelea: simula todo el evento, aplica los resultados a los peleadores y calcula las finanzas.
+// Noche de pelea: simula todo el evento, aplica los resultados a los peleadores
+// (récords, ranking, físico, dinero, títulos, torneos) y calcula las finanzas.
 import { ECONOMIA, MATCHMAKING } from '../config/economia';
 import { PROGRESION } from '../config/balance';
-import { dinero, nombreClase } from './format';
+import { sugerirBonos } from './bonos';
+import { resolverTitulo } from './campeonatos';
+import { dinero } from './format';
 import {
-  boutVacia, costosEvento, estaCompleto, estimarBoletos, hypeBout, hypeEvento, momiosDe, popRegionDe, rankPos, sedeDe,
+  costosEvento, estaCompleto, estimarBoletos, hypeBout, hypeEvento, momiosDe, popRegionDe, rankPos, sedeDe,
 } from './eventos';
 import { simularPelea } from './motor';
 import { agregarNoticia } from './noticias';
 import { nombreCompleto, recordTxt } from './peleador';
-import { recalcularRankings } from './rankings';
+import { ptsDe, recalcularRankings } from './rankings';
 import { Rng, clamp } from './rng';
+import { avanzarGanador, etiquetaPartido, torneoDe } from './torneos';
 import type {
-  Evento, Instantanea, Juego, Pelea, Peleador, ResultadoPelea, Resultado,
+  Evento, Instantanea, Juego, Pelea, Peleador, ResultadoPelea, Resultado, StatsPelea,
 } from './types';
 
 const esFinal = (m: string) => m === 'KO' || m === 'TKO' || m === 'SUB';
@@ -19,9 +23,9 @@ const esFinal = (m: string) => m === 'KO' || m === 'TKO' || m === 'SUB';
 function instantanea(j: Juego, p: Peleador, momioP: number): Instantanea {
   const r = rankPos(j, p);
   return {
-    record: recordTxt(p.rec.tot), rank: r === 0 ? 0 : r, campeon: r === 0,
+    record: recordTxt(p.rec.tot), rank: r, campeon: r === 0,
     momio: momioP, racha: p.racha.n ? `${p.racha.n}${p.racha.tipo === 'V' ? 'V' : p.racha.tipo === 'D' ? 'D' : 'E'}` : '—',
-    forma: p.forma.slice(), pesoKg: Math.round((p.pesoKg - 0.3 + 0.0) * 10) / 10,
+    forma: p.forma.slice(), pesoKg: p.pesoKg,
   };
 }
 
@@ -29,14 +33,13 @@ interface Pago { bolsa: number; bonos: number }
 
 function aplicar(
   e: Evento, b: Pelea, p: Peleador, rival: Peleador, res: ResultadoPelea, esA: boolean, rng: Rng,
-  snapMio: Instantanea, snapRival: Instantanea,
+  snapMio: Instantanea, snapRival: Instantanea, etiquetaTorneo?: string,
 ): { nuevo: Peleador; pago: Pago } {
   const gano = res.ganadorId === p.id;
   const nc = res.metodo === 'NC';
   const empate = res.metodo === 'E';
   const R: Resultado | null = nc ? null : gano ? 'V' : empate ? 'E' : 'D';
-  const mia = esA ? res.stats.a : res.stats.b;
-  const recibidos = esA ? res.stats.b : res.stats.a;
+  const recibidos: StatsPelea = esA ? res.stats.b : res.stats.a;
   const finalizo = gano && esFinal(res.metodo);
   const perdioFinal = !gano && !empate && !nc && (res.metodo === 'KO' || res.metodo === 'TKO');
 
@@ -66,6 +69,14 @@ function aplicar(
     if (R === 'D') peorRachaD = Math.max(peorRachaD, racha.n);
   }
 
+  // ranking por resultados: ganarle a alguien mejor rankeado sube mucho; perder contra uno peor, baja mucho
+  const mias = ptsDe(p);
+  const suyas = ptsDe(rival);
+  let rankPts = mias;
+  if (R === 'V') rankPts += clamp(6 + 0.12 * (suyas - mias), 2, 22) + (b.titulo ? 5 : 0) + (finalizo ? 2 : 0);
+  else if (R === 'D') rankPts -= clamp(6 + 0.12 * (mias - suyas), 1.5, 20);
+  else if (R === 'E') rankPts += clamp(0.12 * (suyas - mias), -3, 3);
+
   // físico
   const fatiga = clamp(40 + res.round * 6 + (esFinal(res.metodo) ? 0 : 10), 30, 90);
   const dano = clamp(p.dano + recibidos.golpesSig * MATCHMAKING.danoPorGolpeSig + recibidos.caidas * 1.5 + (perdioFinal ? 6 : 0), 0, 100);
@@ -86,36 +97,37 @@ function aplicar(
 
   // dinero
   const c = p.contrato;
-  let bolsa = 0;
-  let bonos = 0;
+  const g = { bolsa: 0, victoria: 0, campeonato: 0, finalizacion: 0, noche: 0 };
   if (c) {
-    bolsa = c.bolsa;
+    g.bolsa = c.bolsa;
     if (gano) {
-      bonos += c.bonoVictoria;
-      if (b.titulo) bonos += c.bonoCampeonato;
-      if (finalizo) bonos += c.bonoFinalizacion;
+      g.victoria = c.bonoVictoria;
+      if (b.titulo) g.campeonato = c.bonoCampeonato;
+      if (finalizo) g.finalizacion = c.bonoFinalizacion;
     }
   }
+  const bonos = g.victoria + g.campeonato + g.finalizacion;
 
-  const rivalNombre = nombreCompleto(rival);
   const hist = {
     eventoId: e.id, eventoNombre: e.nombre, semana: e.semana, peleaId: b.id, clase: b.clase, genero: b.genero,
-    titulo: b.titulo, rivalId: rival.id, rivalNombre, resultado: (R ?? 'E') as Resultado,
+    titulo: b.titulo, rivalId: rival.id, rivalNombre: nombreCompleto(rival), resultado: (R ?? 'E') as Resultado,
     metodo: res.metodo, round: res.round, tiempo: res.tiempo,
     miRecord: snapMio.record, rivalRecord: snapRival.record, miRank: snapMio.rank, rivalRank: snapRival.rank,
+    ganancia: g, etiquetaTorneo,
   };
-  void mia;
   const contrato = c ? { ...c, peleasRestantes: Math.max(0, c.peleasRestantes - 1) } : c;
 
   return {
-    pago: { bolsa, bonos },
+    pago: { bolsa: g.bolsa, bonos },
     nuevo: {
       ...p, rec: { tot, mio }, finales, forma, racha, mejorRachaV, peorRachaD, fatiga, dano, fis, descansoHasta, lesion,
-      popularidad: clamp(pop, 0, 100), moral, ganancias: p.ganancias + bolsa + bonos, ultimoCombate: e.semana,
-      peleas: [hist, ...p.peleas].slice(0, 30), contrato,
+      popularidad: clamp(pop, 0, 100), moral, ganancias: p.ganancias + g.bolsa + bonos, ultimoCombate: e.semana,
+      rankPts, peleas: [hist, ...p.peleas].slice(0, 40), contrato,
     },
   };
 }
+
+const sinStats = (): StatsPelea => ({ golpes: 0, golpesSig: 0, derribos: 0, intentosDerribo: 0, subIntentos: 0, controlSeg: 0, caidas: 0 });
 
 export function realizarEvento(j: Juego, id: number): string | null {
   const e = j.eventos.find(x => x.id === id);
@@ -129,13 +141,44 @@ export function realizarEvento(j: Juego, id: number): string | null {
   const hype = hypeEvento(j, e);
   let bolsas = 0;
   let bonosV = 0;
+  let premios = 0;
+
+  // lugar de cada peleador antes del evento (para las flechas de ranking)
+  for (const d of j.divisiones) {
+    if (d.companiaId !== j.miId) continue;
+    const previo: Record<number, number> = {};
+    if (d.campeonId != null) previo[d.campeonId] = 0;
+    d.ranking.forEach((pid, i) => { previo[pid] = i + 1; });
+    d.previo = previo;
+  }
 
   for (const b of e.cartelera) {
-    if (boutVacia(b)) continue;
+    const par = b.torneoId != null ? torneoDe(j, b.torneoId)?.rondas[b.ronda!]?.[b.slot!] : undefined;
+    if (par) { b.aId = par.aId; b.bId = par.bId; }
+    if (b.aId == null || b.bId == null) continue;
+    const t = torneoDe(j, b.torneoId);
+    const etiqueta = t && b.ronda != null && b.slot != null ? etiquetaPartido(t.tam, b.ronda, b.slot) : undefined;
     const ia = j.peleadores.findIndex(p => p.id === b.aId);
     const ib = j.peleadores.findIndex(p => p.id === b.bId);
     const a = j.peleadores[ia];
     const c = j.peleadores[ib];
+
+    // en torneos de una noche, alguien lesionado en una ronda anterior no puede continuar
+    const sale = (p: Peleador) => !!t && (p.retirado || p.companiaId !== j.miId || (!!p.lesion && p.ultimoCombate === e.semana));
+    if (t && (sale(a) || sale(c))) {
+      const ganador = sale(a) && sale(c) ? (rng.chance(0.5) ? a : c) : sale(a) ? c : a;
+      const baja = ganador === a ? c : a;
+      b.hype = hypeBout(j, b);
+      b.resultado = {
+        ganadorId: ganador.id, metodo: 'DQ', round: 0, tiempo: '0:00', tarjetas: [], stats: { a: sinStats(), b: sinStats() },
+        narracion: [`${baja.apellido} no puede continuar en el torneo; ${ganador.apellido} avanza sin pelear.`],
+      };
+      const [ma, mb] = momiosDe(a, c);
+      b.snap = { a: instantanea(j, a, ma), b: instantanea(j, c, mb) };
+      premios += avanzarGanador(j, e, b, ganador.id);
+      continue;
+    }
+
     const [ma, mb] = momiosDe(a, c);
     const snapA = instantanea(j, a, ma);
     const snapB = instantanea(j, c, mb);
@@ -143,29 +186,18 @@ export function realizarEvento(j: Juego, id: number): string | null {
     const res = simularPelea(a, c, b.rounds, rng);
     b.snap = { a: snapA, b: snapB };
     b.resultado = res;
-    const ra = aplicar(e, b, a, c, res, true, rng, snapA, snapB);
-    const rb = aplicar(e, b, c, a, res, false, rng, snapB, snapA);
+    const ra = aplicar(e, b, a, c, res, true, rng, snapA, snapB, etiqueta);
+    const rb = aplicar(e, b, c, a, res, false, rng, snapB, snapA, etiqueta);
     j.peleadores[ia] = ra.nuevo;
     j.peleadores[ib] = rb.nuevo;
     bolsas += ra.pago.bolsa + rb.pago.bolsa;
     bonosV += ra.pago.bonos + rb.pago.bonos;
 
-    // títulos
-    if (b.titulo && res.ganadorId != null) {
-      const div = j.divisiones.find(d => d.id === `${j.miId}:${b.genero}:${b.clase}`);
-      if (div) {
-        if (b.interino) div.interinoId = res.ganadorId;
-        else if (div.campeonId !== res.ganadorId) {
-          const g = j.peleadores.find(p => p.id === res.ganadorId)!;
-          div.campeonId = res.ganadorId;
-          if (div.interinoId === res.ganadorId) div.interinoId = null;
-          agregarNoticia(j, {
-            categoria: 'importante', peleadorId: g.id,
-            titulo: `¡Nuevo campeón ${nombreClase(b.clase, j.ajustes.nombresDivision)}: ${nombreCompleto(g)}!`,
-            cuerpo: `Ganó el título en ${e.nombre} por ${res.metodo} en el round ${res.round}.`,
-          });
-        }
-      }
+    if (b.titulo && b.torneoId == null) resolverTitulo(j, e, b.genero, b.clase, a.id, c.id, b.interino, res.ganadorId, res.metodo, res.round);
+    if (b.torneoId != null) {
+      // en un torneo, un empate se decide con el que tenga mejor récord para poder avanzar
+      const g = res.ganadorId ?? (recordRatio(j.peleadores[ia]) >= recordRatio(j.peleadores[ib]) ? a.id : c.id);
+      premios += avanzarGanador(j, e, b, g);
     }
   }
 
@@ -180,7 +212,7 @@ export function realizarEvento(j: Juego, id: number): string | null {
   }
   const costos = costosEvento(j, e, hype);
   const taquilla = vendidos * e.precio;
-  const gastos = costos.renta + costos.produccion + costos.viaje + bolsas + bonosV;
+  const gastos = costos.renta + costos.produccion + costos.viaje + bolsas + bonosV + premios;
   const neto = Math.round(taquilla + costos.transmision - gastos);
   const llenado = sede.aforo ? vendidos / sede.aforo : 0;
   const pp = ECONOMIA.popularidad;
@@ -197,8 +229,9 @@ export function realizarEvento(j: Juego, id: number): string | null {
   e.finanzas = {
     precio: e.precio, aforo: sede.aforo, boletosVendidos: vendidos, taquilla, transmision: costos.transmision, patrocinios: 0,
     renta: costos.renta, produccion: costos.produccion, viaje: costos.viaje, bolsas: Math.round(bolsas),
-    bonosVictoria: Math.round(bonosV), bonosNoche: 0, neto, popularidad: Math.round(gana * 100) / 100, clima,
+    bonosVictoria: Math.round(bonosV), bonosNoche: 0, premios, neto, popularidad: Math.round(gana * 100) / 100, clima,
   };
+  e.bonos = sugerirBonos(j, e);
 
   // noticias
   const main = e.cartelera[e.cartelera.length - 1];
@@ -210,7 +243,7 @@ export function realizarEvento(j: Juego, id: number): string | null {
   for (const b of e.cartelera) {
     for (const pid of [b.aId, b.bId]) {
       const p = j.peleadores.find(x => x.id === pid);
-      if (!p) continue;
+      if (!p || b.resultado?.metodo === 'DQ' && b.resultado.round === 0) continue;
       if (p.lesion && p.ultimoCombate === e.semana) {
         agregarNoticia(j, {
           categoria: 'importante', peleadorId: p.id, titulo: `${nombreCompleto(p)} se lesionó en la pelea: ${p.lesion.tipo}`,
@@ -230,3 +263,6 @@ export function realizarEvento(j: Juego, id: number): string | null {
   j.rngState = rng.state;
   return null;
 }
+
+const recordRatio = (p: Peleador) => p.rec.mio.v / Math.max(1, p.rec.mio.v + p.rec.mio.d);
+

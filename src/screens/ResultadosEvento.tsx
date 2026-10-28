@@ -5,7 +5,9 @@ import { dinero, fecha } from '../domain/format';
 import type { Evento } from '../domain/types';
 import { useGame } from '../store/game';
 import { Tabs, TopBar, Vacio } from '../ui/kit';
+import { BonosTab } from './BonosTab';
 import { BoutCard, etiquetaBout } from './BoutCard';
+import { etiquetaPartido, torneoDe } from '../domain/torneos';
 
 type TabId = 'resultados' | 'bonos' | 'finanzas';
 
@@ -23,11 +25,11 @@ export function ResultadosEvento({ e }: { e: Evento }) {
         {tab === 'resultados' && (
           <div className="stack">
             {orden.map(({ b, i }) => (
-              <BoutCard key={b.id} j={juego} b={b} etiqueta={etiquetaBout(i, e.cartelera.length)} mostrarResultado onClick={() => nav(`/pelea/${e.id}/${b.id}`)} />
+              <BoutCard key={b.id} j={juego} b={b} etiqueta={(() => { const t = torneoDe(juego, b.torneoId); return t && b.ronda != null && b.slot != null ? etiquetaPartido(t.tam, b.ronda, b.slot) : etiquetaBout(i, e.cartelera.length); })()} mostrarResultado onClick={() => nav(`/pelea/${e.id}/${b.id}`)} />
             ))}
           </div>
         )}
-        {tab === 'bonos' && <Vacio titulo="Bonos de la noche · Fase 3" texto="Aquí elegirás al Peleador de la Noche, la Pelea de la Noche y la Actuación de la Noche, con su dinero extra." />}
+        {tab === 'bonos' && <BonosTab e={e} />}
         {tab === 'finanzas' && <Finanzas e={e} />}
       </div>
     </>
@@ -38,7 +40,7 @@ function Finanzas({ e }: { e: Evento }) {
   const f = e.finanzas;
   if (!f) return <Vacio titulo="Sin finanzas" />;
   const ingresos = f.taquilla + f.transmision + f.patrocinios;
-  const gastos = f.renta + f.produccion + f.viaje + f.bolsas + f.bonosVictoria + f.bonosNoche;
+  const gastos = f.renta + f.produccion + f.viaje + f.bolsas + f.bonosVictoria + f.bonosNoche + f.premios;
   return (
     <div className="stack">
       <div className="card">
@@ -59,6 +61,8 @@ function Finanzas({ e }: { e: Evento }) {
         {f.viaje > 0 && <div className="kv"><span className="k">Viaje</span><span className="v">{dinero(f.viaje)}</span></div>}
         <div className="kv"><span className="k">Bolsas</span><span className="v">{dinero(f.bolsas)}</span></div>
         <div className="kv"><span className="k">Bonos por victoria y campeonato</span><span className="v">{dinero(f.bonosVictoria)}</span></div>
+        <div className="kv"><span className="k">Bonos de la noche</span><span className="v">{f.bonosNoche ? dinero(f.bonosNoche) : 'pendientes'}</span></div>
+        {f.premios > 0 && <div className="kv"><span className="k">Premio del torneo</span><span className="v">{dinero(f.premios)}</span></div>}
         <div className="kv"><span className="k">Total gastos</span><span className="v">{dinero(gastos)}</span></div>
       </div>
       <div className="card center">

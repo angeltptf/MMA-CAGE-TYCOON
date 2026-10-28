@@ -7,6 +7,7 @@ import {
 import { PAISES } from '../config/paises';
 import { nombreClase } from '../domain/format';
 import type { ClaseId, Disciplina, Estilo, Genero, Peleador } from '../domain/types';
+import { rcdVacio } from '../domain/migracion';
 import { useGame } from '../store/game';
 import { Icon } from '../ui/Icon';
 import { Chips, Confirmar, Seg, Stepper, Tabs, TopBar, Vacio } from '../ui/kit';
@@ -23,6 +24,7 @@ const plantilla = (): Peleador => ({
   finales: { ko: 0, tko: 0, sub: 0, dec: 0 }, forma: [], racha: { tipo: 'V', n: 0 }, mejorRachaV: 0, peorRachaD: 0,
   ganancias: 0, ultimoCombate: null, favorito: false, retirado: false, elite: false,
   enVenta: false, sinNegociarHasta: 0, descansoHasta: 0, peleas: [],
+  rankPts: 0, rcd: rcdVacio(),
 });
 
 export function Editor() {

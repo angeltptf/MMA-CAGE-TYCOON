@@ -15,6 +15,7 @@ import { Icon } from '../ui/Icon';
 import { Confirmar, Seg, Stepper, Tabs, TopBar, Vacio } from '../ui/kit';
 import { BoutCard, etiquetaBout } from './BoutCard';
 import { ResultadosEvento } from './ResultadosEvento';
+import { etiquetaPartido } from '../domain/torneos';
 
 type TabId = 'cartelera' | 'boletos' | 'historial';
 
@@ -50,13 +51,13 @@ function Borrador({ e }: { e: EventoT }) {
       {tab === 'cartelera' && (
         <div className="sticky-actions">
           <div className="row">
-            <button className="iconbtn" aria-label="Matchmaking automático" style={{ width: 52, height: 48 }} onClick={() => setConf('auto')}><Icon name="bolt" /></button>
-            <button className="iconbtn" aria-label="Borrar cartelera" style={{ width: 52, height: 48 }} onClick={() => setConf('borrar')}><Icon name="trash" /></button>
+            {e.tipo !== 'torneo' && <button className="iconbtn" aria-label="Matchmaking automático" style={{ width: 52, height: 48 }} onClick={() => setConf('auto')}><Icon name="bolt" /></button>}
+            <button className="iconbtn" aria-label="Borrar" style={{ width: 52, height: 48 }} onClick={() => setConf(e.tipo === 'torneo' ? 'cancelar' : 'borrar')}><Icon name="trash" /></button>
             {esHoy && completo ? (
               <button className="btn primary grow" onClick={() => nav(`/noche/${e.id}`)}><Icon name="bolt" />Noche de pelea</button>
             ) : (
-              <button className="btn primary grow" disabled={!completo || e.confirmado} onClick={() => { const r = acc.confirmar(e.id); setAviso(r ?? 'Evento confirmado'); }}>
-                <Icon name="check" />{e.confirmado ? 'Confirmado' : 'Confirmar'}
+              <button className="btn primary grow" disabled={!completo || e.confirmado || e.tipo === 'torneo'} onClick={() => { const r = acc.confirmar(e.id); setAviso(r ?? 'Evento confirmado'); }}>
+                <Icon name="check" />{e.confirmado || e.tipo === 'torneo' ? 'Confirmado' : 'Confirmar'}
               </button>
             )}
           </div>
@@ -72,11 +73,20 @@ function Borrador({ e }: { e: EventoT }) {
           onSi={() => { const r = acc.matchmaking(e.id); setConf(null); setAviso(r.error ?? (r.avisos.length ? r.avisos.join(' ') : `Cartelera armada: ${r.armadas} combates.`)); }} />
       )}
       {conf === 'borrar' && (
-        <Confirmar titulo="¿Borrar la cartelera?" peligro confirmar="Borrar" texto="Se quitarán todos los combates, pero el evento sigue en el calendario."
-          onNo={() => setConf(null)} onSi={() => { acc.borrarCartelera(e.id); setConf(null); }} />
+        <div className="overlay center" onClick={() => setConf(null)}>
+          <div className="dialog" onClick={ev => ev.stopPropagation()}>
+            <h2>¿Qué quieres borrar?</h2>
+            <p>Puedes dejar el evento y quitar solo los combates, o eliminar el evento completo del calendario.</p>
+            <div className="stack">
+              <button className="btn" onClick={() => { acc.borrarCartelera(e.id); setConf(null); }}>Quitar los combates</button>
+              <button className="btn danger" onClick={() => setConf('cancelar')}>Eliminar el evento</button>
+              <button className="btn" onClick={() => setConf(null)}>Cancelar</button>
+            </div>
+          </div>
+        </div>
       )}
       {conf === 'cancelar' && (
-        <Confirmar titulo="¿Cancelar el evento?" peligro confirmar="Cancelar evento" texto="Se elimina del calendario. Tus peleadores quedan libres para otros eventos."
+        <Confirmar titulo="¿Eliminar el evento?" peligro confirmar="Eliminar evento" texto="Se elimina del calendario junto con su cartelera. Tus peleadores quedan libres para otros eventos."
           onNo={() => setConf(null)} onSi={() => { acc.cancelar(e.id); setConf(null); nav('/eventos', { replace: true }); }} />
       )}
     </>
@@ -87,13 +97,15 @@ function Borrador({ e }: { e: EventoT }) {
 function FilaBout({ b, i, total, e }: { b: Pelea; i: number; total: number; e: EventoT }) {
   const juego = useGame(s => s.juego)!;
   const nav = useNavigate();
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: b.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: b.id, disabled: !!b.torneoId });
+  const t = juego.torneos.find(x => x.id === b.torneoId);
+  const etiqueta = t && b.ronda != null && b.slot != null ? etiquetaPartido(t.tam, b.ronda, b.slot) : etiquetaBout(i, total);
   return (
     <div
       ref={setNodeRef} {...attributes} {...listeners} className="dragrow"
       style={{ transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined, transition, zIndex: isDragging ? 5 : undefined, position: 'relative' }}
     >
-      <BoutCard j={juego} b={b} etiqueta={etiquetaBout(i, total)} onClick={() => nav(`/evento/${e.id}/pelea/${b.id}`)} />
+      <BoutCard j={juego} b={b} etiqueta={etiqueta} onClick={b.torneoId ? undefined : () => nav(`/evento/${e.id}/pelea/${b.id}`)} />
     </div>
   );
 }
@@ -139,13 +151,19 @@ function Boletos({ e, onCancelar }: { e: EventoT; onCancelar: () => void }) {
   return (
     <div className="stack">
       <div className="card stack">
-        <div className="field"><span className="label">Tipo de evento</span>
-          <Seg<'noche' | 'ppv'> valor={e.tipo} onChange={t => acc.configurar(e.id, { tipo: t })} items={[{ id: 'noche', label: 'Fight Night' }, { id: 'ppv', label: 'Numerado (PPV)' }]} />
-        </div>
-        <div className="row between">
-          <span className="label">Combates (máx. {ECONOMIA.peleasMax})</span>
-          <Stepper valor={e.nPeleas} min={ECONOMIA.peleasMin} max={ECONOMIA.peleasMax} onChange={v => acc.configurar(e.id, { nPeleas: v })} />
-        </div>
+        {e.tipo !== 'torneo' ? (
+          <>
+            <div className="field"><span className="label">Tipo de evento</span>
+              <Seg<'noche' | 'ppv'> valor={e.tipo as 'noche' | 'ppv'} onChange={t => acc.configurar(e.id, { tipo: t })} items={[{ id: 'noche', label: 'Fight Night' }, { id: 'ppv', label: 'Numerado (PPV)' }]} />
+            </div>
+            <div className="row between">
+              <span className="label">Combates (máx. {ECONOMIA.peleasMax})</span>
+              <Stepper valor={e.nPeleas} min={ECONOMIA.peleasMin} max={ECONOMIA.peleasMax} onChange={v => acc.configurar(e.id, { nPeleas: v })} />
+            </div>
+          </>
+        ) : (
+          <div className="alert"><Icon name="trophy" /><div>Evento de torneo: sus combates los define la llave del torneo.</div></div>
+        )}
         <div className="field"><span className="label">Nombre del evento</span>
           <input className="input" value={nombre} maxLength={40} onChange={ev => setNombre(ev.target.value)} onBlur={() => nombre.trim() && nombre !== e.nombre && acc.configurar(e.id, { nombre })} />
         </div>
@@ -197,7 +215,7 @@ function Boletos({ e, onCancelar }: { e: EventoT; onCancelar: () => void }) {
         <p className="muted small" style={{ marginTop: 8 }}>La plataforma de TV, el PPV y los patrocinios llegan en la Fase 5; mientras tanto la transmisión digital aporta un ingreso base. Aforo de {numeroCorto(sede.aforo)}.</p>
       </div>
 
-      <button className="btn danger" onClick={onCancelar}><Icon name="trash" />Cancelar evento</button>
+      <button className="btn danger" onClick={onCancelar}><Icon name="trash" />Eliminar evento</button>
       <span className="muted small center">{SEDE_POR_ID[e.sedeId]?.tipo === 'estadio' ? 'Estadio al aire libre: riesgo de mal clima y mayor costo de producción.' : ''}</span>
     </div>
   );

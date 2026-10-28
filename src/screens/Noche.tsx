@@ -70,11 +70,11 @@ export function Noche() {
               </>
             )}
             {hoy && !completo && <button className="btn" onClick={() => nav(`/evento/${e.id}`)}>Ir a la cartelera</button>}
-            {hoy && <button className="btn danger" onClick={() => setCancelar(true)}>Cancelar evento</button>}
+            {hoy && <button className="btn danger" onClick={() => setCancelar(true)}>Eliminar evento</button>}
           </div>
         </div>
         {cancelar && (
-          <Confirmar titulo="¿Cancelar el evento?" peligro confirmar="Cancelar evento" texto="Se elimina del calendario y podrás seguir avanzando semanas."
+          <Confirmar titulo="¿Eliminar el evento?" peligro confirmar="Eliminar evento" texto="Se elimina del calendario y podrás seguir avanzando semanas."
             onNo={() => setCancelar(false)} onSi={() => { acc.cancelar(e.id); nav('/', { replace: true }); }} />
         )}
       </>

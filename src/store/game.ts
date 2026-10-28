@@ -2,6 +2,9 @@ import { create } from 'zustand';
 import * as A from '../domain/acciones';
 import * as EV from '../domain/accionesEvento';
 import { puedeAvanzarSemana } from '../domain/eventos';
+import { pagarBonos } from '../domain/bonos';
+import { Rng } from '../domain/rng';
+import * as TO from '../domain/torneos';
 import { avanzarSemana, clonarJuego, type ResumenSemana } from '../domain/semana';
 import type { RespuestaNegociacion, ModoContrato } from '../domain/negociacion';
 import type { Ajustes, Contrato, Juego, NuevaPartida, Peleador } from '../domain/types';
@@ -187,4 +190,17 @@ export const eventos = {
   confirmar: (e: number) => useGame.getState().mutar(j => EV.accConfirmar(j, e)),
   cancelar: (e: number) => useGame.getState().mutar(j => EV.accCancelarEvento(j, e)),
   realizar: (e: number) => useGame.getState().mutar(j => EV.accRealizarEvento(j, e)),
+};
+
+export const bonosNoche = {
+  pagar: (id: number, sel: Parameters<typeof pagarBonos>[2]) => useGame.getState().mutar(j => pagarBonos(j, id, sel)),
+};
+
+export const torneos = {
+  crear: (cfg: Parameters<typeof TO.crearTorneo>[1]) => useGame.getState().mutar(j => TO.crearTorneo(j, cfg)),
+  setCupo: (id: number, i: number, p: number | null) => useGame.getState().mutar(j => TO.setCupo(j, id, i, p)),
+  llenarAuto: (id: number) => useGame.getState().mutar(j => TO.llenarAuto(j, id)),
+  sortear: (id: number) => useGame.getState().mutar(j => { const rng = new Rng(j.rngState); const r = TO.sortear(j, id, rng); j.rngState = rng.state; return r; }),
+  programar: (id: number, ronda: number, semana: number) => useGame.getState().mutar(j => TO.programarRonda(j, id, ronda, semana)),
+  eliminar: (id: number) => useGame.getState().mutar(j => TO.eliminarTorneo(j, id)),
 };

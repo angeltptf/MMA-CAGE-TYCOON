@@ -3,6 +3,8 @@ import { nombrePais } from '../config/paises';
 import { estrellasCalif, nombreCompleto } from './peleador';
 import { Rng, clamp } from './rng';
 import { recalcularRankings } from './rankings';
+import { pagarBonosPendientes } from './bonos';
+import { ptsDe } from './rankings';
 import { generarOfertas } from './traspasos';
 import { generarProspectos } from './worldgen';
 import { agregarNoticia } from './noticias';
@@ -20,6 +22,7 @@ export function clonarJuego(j: Juego): Juego {
     eventos: j.eventos.map(e => ({ ...e, cartelera: e.cartelera.map(b => ({ ...b })) })),
     ofertas: j.ofertas.map(o => ({ ...o })),
     contadores: { ...j.contadores },
+    torneos: j.torneos.map(t => ({ ...t, cupos: t.cupos.slice(), rondas: t.rondas.map(r => r.map(p => ({ ...p }))) })),
   };
 }
 
@@ -82,6 +85,7 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
   j.semanaAbs += 1;
   const semAnio = semanaDelAnio(j.semanaAbs);
   const resumen: ResumenSemana = { retiros: 0, nuevos: 0, lesionadosMios: [] };
+  pagarBonosPendientes(j);
   const afectadas = new Set<string>();
   let cambioEstructura = false;
 
@@ -91,6 +95,9 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
     let p = progresar(original, rng);
     const mio = p.companiaId === j.miId;
     const cambios: Partial<Peleador> = {};
+
+    // inactividad: quien lleva meses sin pelear va cayendo en el ranking
+    if (mio && p.ultimoCombate != null && j.semanaAbs - p.ultimoCombate > 26) cambios.rankPts = Math.max(1, ptsDe(p) - 0.15);
 
     // recuperación
     cambios.fatiga = Math.max(0, p.fatiga - PROGRESION.recuperacionFatigaSemana);

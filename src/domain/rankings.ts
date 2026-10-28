@@ -10,6 +10,9 @@ export function puntajeRanking(p: Peleador): number {
   return scoreCalif(p) * 10 + p.popularidad * 0.15 + pctV * 10 + Math.min(p.rec.tot.v, 25) * 0.1;
 }
 
+// Mis peleadores se ordenan por puntos de ranking (resultados); los rivales, por calificación y fama
+export const ptsDe = (p: Peleador): number => (p.rankPts > 0 ? p.rankPts : puntajeRanking(p));
+
 const claveDiv = (c: string, g: Genero, clase: ClaseId) => `${c}:${g}:${clase}`;
 
 // Recalcula campeones y rankings de las divisiones de las compañías indicadas
@@ -25,10 +28,12 @@ export function recalcularRankings(j: Juego, companiaIds?: string[], inicial = f
     else grupos.set(k, [p]);
   }
   const porId = new Map(j.peleadores.map(p => [p.id, p]));
+  const esMiaDiv = (d: { companiaId: string }) => d.companiaId === j.miId;
   for (const d of j.divisiones) {
     if (companiaIds && !companiaIds.includes(d.companiaId)) continue;
-    const lista = (grupos.get(d.id) ?? []).slice().sort((a, b) => puntajeRanking(b) - puntajeRanking(a));
-    const esMia = d.companiaId === j.miId;
+    const valor = (p: Peleador) => (esMiaDiv(d) ? ptsDe(p) : puntajeRanking(p));
+    const lista = (grupos.get(d.id) ?? []).slice().sort((a, b) => valor(b) - valor(a));
+    const esMia = esMiaDiv(d);
     const campActual = d.campeonId != null ? porId.get(d.campeonId) : undefined;
     const campValido = !!campActual && !campActual.retirado && campActual.companiaId === d.companiaId;
     if (!campValido) {

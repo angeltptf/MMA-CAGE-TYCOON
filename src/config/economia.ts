@@ -51,8 +51,11 @@ export const ECONOMIA = {
   peleasMin: 1,
   peleasInicial: 6,
 
-  // Bono de la noche (se paga al peleador de la noche y a la pelea de la noche)
-  bonoNochePct: 1.0,            // x la bolsa del ganador
+  // Bonos de la noche, como múltiplo de la bolsa de cada peleador (mínimo `min`)
+  bonos: { peleador: 0.6, pelea: 0.4, actuacion: 0.3, min: 250 },
+
+  // Torneos: el campeón se lleva este múltiplo de su bolsa (mínimo `premioMin`)
+  torneo: { premioPorBolsa: 3, premioMin: 1000 },
 };
 
 // Reglas de matchmaking y descanso

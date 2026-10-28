@@ -24,7 +24,7 @@ const rankTxt = (r: number) => (r === 0 ? 'C' : r < 99 ? `#${r}` : '');
 function Lado({ p, snap, res, gana, perdio, momio }: {
   p?: Peleador; snap?: { record: string; rank: number; momio: number }; res?: string; gana?: boolean; perdio?: boolean; momio?: number;
 }) {
-  if (!p) return <div className="grow center muted">—</div>;
+  if (!p) return <div className="grow center muted">Por definir</div>;
   const rec = snap?.record ?? recordTxt(p.rec.tot);
   const rk = snap ? snap.rank : undefined;
   return (
@@ -59,6 +59,7 @@ export function BoutCard({ j, b, etiqueta, onClick, mostrarResultado }: {
       <div className="row between small" style={{ marginBottom: 8 }}>
         <span className="muted" style={{ fontWeight: 700, letterSpacing: '.06em', textTransform: 'uppercase' }}>{etiqueta}</span>
         <span className="row" style={{ gap: 6 }}>
+          {b.torneoId != null && <span className="pill accent"><Icon name="trophy" />Torneo</span>}
           {b.titulo && <span className="pill accent"><Icon name="trophy" />{b.interino ? 'Interino' : 'Campeonato'}</span>}
           <span className="pill">{b.genero === 'F' ? '♀ ' : ''}{nombreClase(b.clase, j.ajustes.nombresDivision)}</span>
           <span className="pill">{b.rounds} rounds</span>

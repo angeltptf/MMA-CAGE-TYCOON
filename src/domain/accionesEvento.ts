@@ -2,10 +2,11 @@
 import { ECONOMIA } from '../config/economia';
 import { SEDE_POR_ID } from '../config/sedes';
 import {
-  boutVacia, cambiarNumeroPeleas, cancelarEvento, crearEvento, estaCompleto, hypeBout, matchmakingAutomatico,
+  boutVacia, cambiarNumeroPeleas, crearEvento, estaCompleto, hypeBout, matchmakingAutomatico,
   ordenarPorHype, ponerNombre, sedeDesbloqueada, validarPelea,
 } from './eventos';
 import { realizarEvento } from './noche';
+import { liberarEventoTorneo } from './torneos';
 import { Rng, clamp } from './rng';
 import type { Evento, Juego, Pelea, TipoEvento } from './types';
 
@@ -56,6 +57,7 @@ export function accGuardarPelea(
   if (!editable(e)) return { error: 'Este evento ya no se puede modificar.', avisos: [] };
   const b = e.cartelera.find(x => x.id === peleaId);
   if (!b) return { error: 'Combate no encontrado.', avisos: [] };
+  if (b.torneoId) return { error: 'Las peleas de un torneo las define la llave.', avisos: [] };
   const a = j.peleadores.find(p => p.id === datos.aId);
   const c = j.peleadores.find(p => p.id === datos.bId);
   if (!a || !c) return { error: 'Elige a los dos peleadores.', avisos: [] };
@@ -150,7 +152,8 @@ export function accConfirmar(j: Juego, eventoId: number): string | null {
 export function accCancelarEvento(j: Juego, eventoId: number): string | null {
   const e = buscar(j, eventoId);
   if (!editable(e)) return 'Este evento ya no se puede cancelar.';
-  cancelarEvento(e);
+  liberarEventoTorneo(j, e);
+  j.eventos = j.eventos.filter(x => x.id !== eventoId);
   return null;
 }
 
