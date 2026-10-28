@@ -16,6 +16,11 @@ Referencias visuales: `referencias/` (solo para entender funciones; no copiar no
 - Rivales: sus peleas usarán una versión rápida del motor (sin narración); las mías, el motor completo.
 - Publicación: GitHub Pages (repo público) + guardado en IndexedDB con respaldo JSON.
 
+- Dificultades: Fácil/Normal/Difícil/Hardcore ($50K). Población 2,000–3,000; más agentes libres de 0-1 estrellas cuanto más difícil.
+- Contratos negociables (bolsa, bonos, PPV, duración, cláusula, exclusividad): el peleador acepta, contraoferta o rechaza.
+- Otras compañías ofrecen por mis peleadores (aceptar / rechazar / contraofertar) o pagan su cláusula y se lo llevan.
+- Economía temprana: la transmisión digital es provisional hasta la Fase 5 (TV/PPV/patrocinios).
+
 ## Estructura
 - `src/domain/` lógica pura y testeable (mundo, semana, rankings, acciones, listas). Sin React.
 - `src/store/` estado (zustand) y guardado (Dexie/IndexedDB).

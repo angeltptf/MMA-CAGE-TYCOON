@@ -182,7 +182,7 @@ function NuevaPartida({ ranura, onVolver }: { ranura: number; onVolver: () => vo
       <button className="btn primary" disabled={!valido || creando} onClick={crear}>
         {creando ? 'Generando el mundo…' : 'Comenzar'}
       </button>
-      <p className="muted small center">Se generan ~1,500 peleadores y 10 compañías rivales. Empiezas sin peleadores ni divisiones.</p>
+      <p className="muted small center">Se generan de 2,000 a 3,000 peleadores (según la dificultad) y 10 compañías rivales. Empiezas sin peleadores ni divisiones.</p>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import * as A from '../domain/acciones';
+import * as EV from '../domain/accionesEvento';
+import { puedeAvanzarSemana } from '../domain/eventos';
 import { avanzarSemana, clonarJuego, type ResumenSemana } from '../domain/semana';
 import type { RespuestaNegociacion, ModoContrato } from '../domain/negociacion';
 import type { Ajustes, Contrato, Juego, NuevaPartida, Peleador } from '../domain/types';
@@ -23,6 +25,8 @@ interface Estado {
   avanzar: () => void;
   // Ejecuta una acción del dominio sobre una copia; devuelve el error (o null)
   hacer: (fn: (j: Juego) => string | null | void, exito?: string) => string | null;
+  // Aplica una función a una copia de la partida y devuelve su resultado (siempre guarda los cambios)
+  mutar: <T>(fn: (j: Juego) => T) => T;
   negociar: (id: number, oferta: Contrato, modo: ModoContrato) => RespuestaNegociacion;
   contraofertar: (ofertaId: number, monto: number) => { ok: boolean; mensaje: string };
   actualizarAjustes: (a: Partial<Ajustes>) => void;
@@ -88,6 +92,7 @@ export const useGame = create<Estado>((set, get) => {
     avanzar: () => {
       const j = get().juego;
       if (!j || j.finDelJuego) return;
+      if (!puedeAvanzarSemana(j)) { set({ aviso: 'Sin hacer la Noche de pelea no se puede avanzar: realiza o cancela el evento.' }); return; }
       const { juego, resumen } = avanzarSemana(j);
       set({ juego, ultimoResumen: resumen });
       programarGuardado();
@@ -104,6 +109,14 @@ export const useGame = create<Estado>((set, get) => {
       return null;
     },
 
+    mutar: fn => {
+      const j = get().juego;
+      if (!j) throw new Error('Sin partida');
+      const copia = clonarJuego(j);
+      const r = fn(copia);
+      aplicar(copia);
+      return r;
+    },
     negociar: (id, oferta, modo) => {
       const j = get().juego;
       if (!j) return { tipo: 'rechaza', mensaje: 'Sin partida.', ofendido: false };
@@ -158,3 +171,20 @@ export const acciones = {
 };
 
 export const miCompania = (j: Juego) => j.companias.find(c => c.esMia)!;
+
+// Acciones de eventos para los componentes
+export const eventos = {
+  crear: (semana: number, tipo: 'ppv' | 'noche'): { id?: number; error?: string } =>
+    useGame.getState().mutar(j => { const s: { id?: number } = {}; const e = EV.accCrearEvento(j, semana, tipo, s); return e ? { error: e } : { id: s.id }; }),
+  configurar: (id: number, patch: Parameters<typeof EV.accConfigurar>[2]) => useGame.getState().mutar(j => EV.accConfigurar(j, id, patch)),
+  guardarPelea: (e: number, p: number, d: Parameters<typeof EV.accGuardarPelea>[3]) => useGame.getState().mutar(j => EV.accGuardarPelea(j, e, p, d)),
+  quitarPelea: (e: number, p: number) => useGame.getState().mutar(j => EV.accQuitarPelea(j, e, p)),
+  reordenar: (e: number, ids: number[]) => useGame.getState().mutar(j => EV.accReordenar(j, e, ids)),
+  borrarCartelera: (e: number) => useGame.getState().mutar(j => EV.accBorrarCartelera(j, e)),
+  matchmaking: (e: number) => useGame.getState().mutar(j => { const s: { avisos?: string[]; armadas?: number } = {}; const err = EV.accMatchmaking(j, e, s); return { error: err, avisos: s.avisos ?? [], armadas: s.armadas ?? 0 }; }),
+  sugerir: (e: number, p: number) => useGame.getState().mutar(j => { const s: { avisos?: string[] } = {}; const err = EV.accSugerirPelea(j, e, p, s); return { error: err, avisos: s.avisos ?? [] }; }),
+  ordenarPorHype: (e: number) => useGame.getState().mutar(j => EV.accOrdenarPorHype(j, e)),
+  confirmar: (e: number) => useGame.getState().mutar(j => EV.accConfirmar(j, e)),
+  cancelar: (e: number) => useGame.getState().mutar(j => EV.accCancelarEvento(j, e)),
+  realizar: (e: number) => useGame.getState().mutar(j => EV.accRealizarEvento(j, e)),
+};

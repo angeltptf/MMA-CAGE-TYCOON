@@ -81,7 +81,7 @@ export const CICLO_VIDA = {
 
 // --- Contratos ---
 export const CONTRATOS = {
-  bolsaBase: 400,
+  bolsaBase: 300,
   bolsaPorPopularidad: 0.0765,  // bolsa = base * exp(pop * k)
   bolsaMin: 250,
   bonoVictoriaPct: 1.0,         // bono por victoria = bolsa * pct

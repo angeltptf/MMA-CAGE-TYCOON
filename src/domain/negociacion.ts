@@ -53,7 +53,8 @@ export function exigencia(j: Juego, p: Peleador): Exigencia {
   pide.bonoVictoria = Math.round(pide.bonoVictoria * m);
   pide.bonoCampeonato = Math.round(pide.bonoCampeonato * m);
   pide.clausula = clausulaDe(pide, p.edad);
-  const umbral = 1 - clamp((p.moral - 60) / 500, -0.08, 0.08);
+  // con moral alta acepta algo menos de lo que pide; nunca exige más de lo que pidió
+  const umbral = 1 - clamp((p.moral - 60) / 500, 0, 0.08);
   return { pide, ventajas, umbral };
 }
 

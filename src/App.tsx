@@ -4,7 +4,13 @@ import { Ajustes } from './screens/Ajustes';
 import { Comparar } from './screens/Comparar';
 import { Companias } from './screens/Companias';
 import { Divisiones } from './screens/Divisiones';
+import { DetallePelea } from './screens/DetallePelea';
 import { Editor } from './screens/Editor';
+import { Evento } from './screens/Evento';
+import { Eventos } from './screens/Eventos';
+import { Noche } from './screens/Noche';
+import { ProgramarPelea } from './screens/ProgramarPelea';
+import { Sedes } from './screens/Sedes';
 import { Empresa } from './screens/Empresa';
 import { Ficha } from './screens/Ficha';
 import { Home } from './screens/Home';
@@ -56,7 +62,12 @@ export function App() {
             <Route path="/peleador/:id" element={<Ficha />} />
             <Route path="/editor/:id" element={<Editor />} />
             <Route path="/comparar/:a/:b" element={<Comparar />} />
-            <Route path="/eventos" element={<Proximamente titulo="Eventos" fase="Fase 2" texto="Aquí vivirán el calendario, la cartelera, el matchmaking automático y la Noche de pelea." tab />} />
+            <Route path="/eventos" element={<Eventos />} />
+            <Route path="/evento/:id" element={<Evento />} />
+            <Route path="/evento/:id/sede" element={<Sedes />} />
+            <Route path="/evento/:id/pelea/:peleaId" element={<ProgramarPelea />} />
+            <Route path="/pelea/:eventoId/:peleaId" element={<DetallePelea />} />
+            <Route path="/noche/:id" element={<Noche />} />
             <Route path="/negocios" element={<Proximamente titulo="Negocios" fase="Fase 5" texto="Patrocinios, derechos de TV, PPV y ofertas de inversionistas." tab />} />
             <Route path="/mas" element={<Mas />} />
             <Route path="/divisiones" element={<Divisiones />} />

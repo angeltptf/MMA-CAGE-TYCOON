@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RANGO_RESPALDO_DIAS } from '../config/balance';
 import { alcance, miEmpresa, ordenCompanias, popularidadEmpresa } from '../domain/empresa';
+import { estaCompleto, eventoPendienteHoy, proximoEvento } from '../domain/eventos';
 import { dinero, fecha } from '../domain/format';
 import { disponible, nombreCompleto, porVencer } from '../domain/peleador';
 import { exportarJSON } from '../store/db';
@@ -23,8 +24,11 @@ export function Home() {
   const vencen = mios.filter(porVencer);
   const posicion = ordenCompanias(juego).findIndex(c => c.esMia) + 1;
   const noLeidas = juego.noticias.filter(n => !n.leida).length;
-  const eventos = juego.eventos as { semana: number; nombre?: string }[];
-  const eventoHoy = eventos.find(e => e.semana === juego.semanaAbs);
+  const eventoHoy = eventoPendienteHoy(juego);
+  const proximo = proximoEvento(juego);
+  const principal = proximo ? proximo.cartelera[proximo.cartelera.length - 1] : undefined;
+  const pa = principal ? juego.peleadores.find(p => p.id === principal.aId) : undefined;
+  const pb = principal ? juego.peleadores.find(p => p.id === principal.bId) : undefined;
   const ofertas = juego.ofertas.filter(o => o.estado === 'pendiente');
   const dias = (Date.now() - juego.ultimoRespaldo) / 86_400_000;
   const pedirRespaldo = juego.ajustes.recordatorioRespaldo && dias >= RANGO_RESPALDO_DIAS;
@@ -77,18 +81,25 @@ export function Home() {
           </button>
         </div>
 
-        <div className="card">
+        <button className="card tap" style={{ textAlign: 'left' }} onClick={() => nav(proximo ? `/evento/${proximo.id}` : '/eventos')}>
           <div className="label">Próximo evento</div>
-          {eventoHoy ? <div className="mid" style={{ marginTop: 4 }}>{eventoHoy.nombre}</div> : (
+          {proximo ? (
+            <>
+              <div className="mid" style={{ marginTop: 4 }}>{pa && pb ? `${pa.apellido.toUpperCase()} vs ${pb.apellido.toUpperCase()}` : 'Cartelera por armar'}</div>
+              <div className="muted small" style={{ marginTop: 2 }}>{proximo.nombre} · {fecha(proximo.semana)}{estaCompleto(proximo) ? ' · Listo' : ' · Incompleto'}</div>
+            </>
+          ) : (
             <>
               <div className="mid" style={{ marginTop: 4 }}>Sin evento programado</div>
-              <div className="muted small" style={{ marginTop: 4 }}>Los eventos y la cartelera llegan en la Fase 2.</div>
+              <div className="muted small" style={{ marginTop: 4 }}>Toca para abrir el calendario y crear tu primer evento.</div>
             </>
           )}
-        </div>
+        </button>
 
         {eventoHoy
-          ? <button className="btn primary" onClick={() => nav('/eventos')}><Icon name="bolt" />Noche de pelea</button>
+          ? (estaCompleto(eventoHoy)
+            ? <button className="btn primary" onClick={() => nav(`/noche/${eventoHoy.id}`)}><Icon name="bolt" />Noche de pelea</button>
+            : <button className="btn primary" onClick={() => nav(`/evento/${eventoHoy.id}`)}><Icon name="calendar" />Completar evento de esta semana</button>)
           : <button className="btn primary" disabled={juego.finDelJuego} onClick={onAvanzar}><Icon name="chevron" />Avanzar semana</button>}
 
         <div className="stat-grid">

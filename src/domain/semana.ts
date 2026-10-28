@@ -171,6 +171,16 @@ export function avanzarSemana(actual: Juego): { juego: Juego; resumen: ResumenSe
     resumen.nuevos = n;
   }
 
+  // contratos míos que se terminaron: quedan como agentes libres
+  for (let i = 0; i < j.peleadores.length; i++) {
+    const p = j.peleadores[i];
+    if (p.companiaId === j.miId && !p.retirado && p.contrato && p.contrato.peleasRestantes <= 0) {
+      j.peleadores[i] = { ...p, companiaId: null, contrato: null, enVenta: false };
+      agregarNoticia(j, { categoria: 'peleadores', peleadorId: p.id, titulo: `${nombreCompleto(p)} quedó como agente libre`, cuerpo: 'Se le terminó el contrato y no lo renovaste.' });
+      afectadas.add(j.miId);
+    }
+  }
+
   // otras compañías ofrecen por mis peleadores (o pagan su cláusula)
   generarOfertas(j, rng);
 
